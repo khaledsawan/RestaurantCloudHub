@@ -1,4 +1,5 @@
 using RestaurantSystem.Application.Common.Models;
+using RestaurantSystem.Application.Features.Auth.Commands.Logout;
 
 namespace RestaurantSystem.Application.Common.Interfaces;
 
@@ -7,6 +8,8 @@ public interface IIdentityService
     Task<Result<int>> RegisterAsync(string email, string password, string firstName, string lastName, string role = "Customer");
     Task<Result<AuthResult>> LoginAsync(string email, string password);
     Task<Result<AuthResult>> RefreshTokenAsync(string refreshToken);
+    Task<Result> ConfirmEmailAsync(string email, string token);
+    Task<Result> ResendConfirmationAsync(string email);
     Task<Result> ChangePasswordAsync(int userId, string currentPassword, string newPassword);
     Task<Result<UserDto>> GetUserByIdAsync(int userId);
     Task<Result<UserDto>> GetUserByEmailAsync(string email);

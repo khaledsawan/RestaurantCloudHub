@@ -1,0 +1,65 @@
+﻿using Microsoft.EntityFrameworkCore;
+using RestaurantSystem.Domain.Entities.Identity;
+
+
+namespace RestaurantSystem.Infrastructure.Persistence;
+
+/// <summary>
+/// Application database context
+/// Simple, direct, practical approach
+/// </summary>
+public class ApplicationDbContext : DbContext
+{
+    public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
+        : base(options)
+    {
+    }
+
+    // ========================================
+    // DbSets - Add as you create entities
+    // ========================================
+    
+    // Auth
+    public DbSet<ApplicationUser> Users { get; set; } = null!;
+    public DbSet<UserRole> UserRoles { get; set; } = null!;
+    public DbSet<RefreshToken> RefreshTokens { get; set; } = null!;
+
+    // Customers (add when you create them)
+    // public DbSet<Customer> Customers { get; set; } = null!;
+    // public DbSet<CustomerAddress> CustomerAddresses { get; set; } = null!;
+
+    // Orders (add when you create them)
+    // public DbSet<Order> Orders { get; set; } = null!;
+    // public DbSet<OrderItem> OrderItems { get; set; } = null!;
+    // public DbSet<OrderStatusHistory> OrderStatusHistories { get; set; } = null!;
+
+    // Menu (add when you create them)
+    // public DbSet<Category> Categories { get; set; } = null!;
+    // public DbSet<MenuItem> MenuItems { get; set; } = null!;
+    // public DbSet<MenuItemOptionGroup> MenuItemOptionGroups { get; set; } = null!;
+    // public DbSet<MenuItemOption> MenuItemOptions { get; set; } = null!;
+
+    // ========================================
+    // Configuration
+    // ========================================
+    
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        base.OnModelCreating(modelBuilder);
+        
+        // Apply all entity configurations from assembly
+        modelBuilder.ApplyConfigurationsFromAssembly(typeof(ApplicationDbContext).Assembly);
+    }
+
+    // ========================================
+    // Optional: Override SaveChanges for interceptors
+    // ========================================
+    
+    public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+    {
+        // You can add custom logic here if needed
+        // For example, automatically set UpdatedAt timestamps
+        
+        return await base.SaveChangesAsync(cancellationToken);
+    }
+}

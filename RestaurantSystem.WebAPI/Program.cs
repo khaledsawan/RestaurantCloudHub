@@ -1,10 +1,20 @@
-using Microsoft.EntityFrameworkCore;
-using RestaurantSystem.Infrastructure;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.OpenApi;
-using Microsoft.Extensions.Diagnostics.HealthChecks;
 using System.Security.Authentication;
+using System.Text;
+using FluentValidation;
+using MediatR;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi;
+using RestaurantSystem.Application.Common.Behaviors;
+using RestaurantSystem.Application.Common.Interfaces;
+using RestaurantSystem.Application.Features.Auth.Commands.Register;
+using RestaurantSystem.Infrastructure.Identity;
+using RestaurantSystem.Infrastructure.Persistence;
+using RestaurantSystem.Infrastructure.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -61,7 +71,7 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
 var enableSensitiveDataLogging = builder.Configuration.GetValue<bool?>("EfCore:EnableSensitiveDataLogging") ?? false;
 var enableDetailedErrors = builder.Configuration.GetValue<bool?>("EfCore:EnableDetailedErrors") ?? false;
 
-builder.Services.AddDbContext<AppDbContext>(options =>
+builder.Services.AddDbContext<ApplicationDbContext>(options =>
 {
     options.UseNpgsql(connectionString);
     options.EnableSensitiveDataLogging(enableSensitiveDataLogging);
@@ -85,6 +95,43 @@ builder.Services.AddVersionedApiExplorer(options =>
 // CONTROLLERS (API)
 builder.Services.AddControllers();
 
+// HTTP CONTEXT ACCESSOR (for CurrentUserService)
+builder.Services.AddHttpContextAccessor();
+
+// MEDIATR + VALIDATION
+builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssemblyContaining<RegisterCommand>());
+builder.Services.AddValidatorsFromAssemblyContaining<RegisterCommandValidator>();
+builder.Services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
+
+// AUTH SERVICES
+builder.Services.AddScoped<IIdentityService, IdentityService>();
+builder.Services.AddScoped<ITokenService, TokenService>();
+builder.Services.AddScoped<IEmailService, EmailService>();
+builder.Services.AddScoped<IDateTime, DateTimeService>();
+builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
+
+// JWT AUTH
+var jwtSecret = builder.Configuration["JwtSettings:SecretKey"]
+    ?? throw new InvalidOperationException("JwtSettings:SecretKey is required");
+var jwtIssuer = builder.Configuration["JwtSettings:Issuer"] ?? "RestaurantSystem";
+var jwtAudience = builder.Configuration["JwtSettings:Audience"] ?? "RestaurantSystemAPI";
+
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecret)),
+            ValidateIssuer = true,
+            ValidIssuer = jwtIssuer,
+            ValidateAudience = true,
+            ValidAudience = jwtAudience,
+            ValidateLifetime = true,
+            ClockSkew = TimeSpan.Zero
+        };
+    });
+
 // SWAGGER / OPENAPI
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
@@ -100,6 +147,24 @@ builder.Services.AddSwaggerGen(options =>
             return apiDesc.GroupName == "health";
         }
         return apiDesc.GroupName == docName;
+    });
+
+    const string securitySchemeName = "Bearer";
+
+    options.AddSecurityDefinition(securitySchemeName, new OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        In = ParameterLocation.Header,
+        Type = SecuritySchemeType.Http,
+        Scheme = "bearer",
+        BearerFormat = "JWT",
+        Description = "JWT Authorization header using the Bearer scheme."
+    });
+
+    // This is the new API for Swashbuckle 10 — use a delegate and the built-in reference type
+    options.AddSecurityRequirement(document => new OpenApiSecurityRequirement
+    {
+        [new OpenApiSecuritySchemeReference(securitySchemeName, document)] = new List<string>()
     });
 });
 
@@ -130,6 +195,7 @@ if (!app.Environment.IsDevelopment())
 
 app.UseForwardedHeaders();
 app.UseHttpsRedirection();
+app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 

@@ -1,3 +1,5 @@
+using System.Net;
+using System.Net.Mail;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using RestaurantSystem.Application.Common.Interfaces;
@@ -12,6 +14,7 @@ public class EmailService : IEmailService
 {
     private readonly ILogger<EmailService> _logger;
     private readonly IConfiguration _configuration;
+    private readonly EmailSettings _settings;
 
     public EmailService(
         ILogger<EmailService> logger,
@@ -19,20 +22,39 @@ public class EmailService : IEmailService
     {
         _logger = logger;
         _configuration = configuration;
+        _settings = _configuration.GetSection("EmailSettings").Get<EmailSettings>()
+            ?? throw new InvalidOperationException("EmailSettings configuration is missing");
     }
 
     public async Task SendEmailAsync(string to, string subject, string body, bool isHtml = true)
     {
-        // TODO: Implement actual email sending
-        _logger.LogInformation(
-            "Sending email to {To}, Subject: {Subject}",
-            to, subject);
+        try
+        {
+            using var message = new MailMessage
+            {
+                From = new MailAddress(_settings.FromEmail, _settings.FromName),
+                Subject = subject,
+                Body = body,
+                IsBodyHtml = isHtml
+            };
 
-        // Simulate async operation
-        await Task.Delay(100);
+            message.To.Add(new MailAddress(to));
 
-        // For development, just log the email
-        _logger.LogDebug("Email Body: {Body}", body);
+            using var client = new SmtpClient(_settings.SmtpHost, _settings.SmtpPort)
+            {
+                Credentials = new NetworkCredential(_settings.SmtpUser, _settings.SmtpPass),
+                EnableSsl = true
+            };
+
+            await client.SendMailAsync(message);
+
+            _logger.LogInformation("Email sent to {To}, Subject: {Subject}", to, subject);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to send email to {To}", to);
+            throw;
+        }
     }
 
     public async Task SendEmailAsync(IEnumerable<string> to, string subject, string body, bool isHtml = true)
@@ -117,4 +139,28 @@ public class EmailService : IEmailService
 
         await SendEmailAsync(to, subject, body);
     }
+
+    public async Task SendEmailConfirmationAsync(string to, string code, string firstName)
+    {
+        var subject = "Confirm your email";
+        var body = $@"
+            <h1>Hi {firstName},</h1>
+            <p>Thanks for registering! Use the code below to confirm your email:</p>
+            <p><strong>{code}</strong></p>
+            <p>This code expires in 24 hours.</p>
+            <p>If you did not create this account, you can ignore this email.</p>
+        ";
+
+        await SendEmailAsync(to, subject, body);
+    }
+}
+
+internal sealed class EmailSettings
+{
+    public string SmtpHost { get; set; } = string.Empty;
+    public int SmtpPort { get; set; } = 587;
+    public string SmtpUser { get; set; } = string.Empty;
+    public string SmtpPass { get; set; } = string.Empty;
+    public string FromName { get; set; } = string.Empty;
+    public string FromEmail { get; set; } = string.Empty;
 }

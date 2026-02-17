@@ -44,4 +44,9 @@ public interface IEmailService
     /// Send welcome email for new customers
     /// </summary>
     Task SendWelcomeEmailAsync(string to, string firstName);
+
+    /// <summary>
+    /// Send email confirmation code
+    /// </summary>
+    Task SendEmailConfirmationAsync(string to, string code, string firstName);
 }

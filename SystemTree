@@ -1,0 +1,423 @@
+RestaurantSystem/
+│
+├── src/
+│   │
+│   ├── RestaurantSystem.Domain/
+│   │   ├── Common/
+│   │   │   ├── BaseEntity.cs
+│   │   │   ├── BaseAuditableEntity.cs
+│   │   │   └── ISoftDeletable.cs
+│   │   │
+│   │   ├── Enums/
+│   │   │   ├── UserRole.cs
+│   │   │   ├── OrderStatus.cs
+│   │   │   ├── OrderType.cs
+│   │   │   ├── PaymentStatus.cs
+│   │   │   └── PaymentMethod.cs
+│   │   │
+│   │   ├── Entities/
+│   │   │   └── Identity/
+│   │   │       ├── ApplicationUser.cs
+│   │   │       ├── RefreshToken.cs
+│   │   │       └── UserRole.cs
+│   │   │
+│   │   ├── Exceptions/
+│   │   │   ├── DomainException.cs
+│   │   │   ├── UnauthorizedException.cs
+│   │   │   └── ForbiddenException.cs
+│   │   │
+│   │   └── RestaurantSystem.Domain.csproj
+│   │
+│   ├── RestaurantSystem.Application/
+│   │   ├── Common/
+│   │   │   ├── Interfaces/
+│   │   │   │   ├── IApplicationDbContext.cs
+│   │   │   │   ├── IIdentityService.cs
+│   │   │   │   ├── ITokenService.cs
+│   │   │   │   ├── ICurrentUserService.cs
+│   │   │   │   └── IDateTime.cs
+│   │   │   │
+│   │   │   ├── Models/
+│   │   │   │   ├── Result.cs
+│   │   │   │   ├── AuthResult.cs
+│   │   │   │   ├── PaginatedList.cs
+│   │   │   │   └── CurrentUser.cs
+│   │   │   │
+│   │   │   ├── Behaviors/
+│   │   │   │   ├── ValidationBehavior.cs
+│   │   │   │   ├── AuthorizationBehavior.cs
+│   │   │   │   ├── LoggingBehavior.cs
+│   │   │   │   └── PerformanceBehavior.cs
+│   │   │   │
+│   │   │   └── Exceptions/
+│   │   │       ├── ValidationException.cs
+│   │   │       └── NotFoundException.cs
+│   │   │
+│   │   ├── Features/
+│   │   │   │
+│   │   │   ├── Auth/  ⭐ START HERE
+│   │   │   │   ├── Commands/
+│   │   │   │   │   ├── Register/
+│   │   │   │   │   │   ├── RegisterCommand.cs
+│   │   │   │   │   │   ├── RegisterCommandHandler.cs
+│   │   │   │   │   │   └── RegisterCommandValidator.cs
+│   │   │   │   │   │
+│   │   │   │   │   ├── Login/
+│   │   │   │   │   │   ├── LoginCommand.cs
+│   │   │   │   │   │   ├── LoginCommandHandler.cs
+│   │   │   │   │   │   └── LoginCommandValidator.cs
+│   │   │   │   │   │
+│   │   │   │   │   ├── RefreshToken/
+│   │   │   │   │   │   ├── RefreshTokenCommand.cs
+│   │   │   │   │   │   └── RefreshTokenCommandHandler.cs
+│   │   │   │   │   │
+│   │   │   │   │   ├── Logout/
+│   │   │   │   │   │   ├── LogoutCommand.cs
+│   │   │   │   │   │   └── LogoutCommandHandler.cs
+│   │   │   │   │   │
+│   │   │   │   │   ├── ChangePassword/
+│   │   │   │   │   │   ├── ChangePasswordCommand.cs
+│   │   │   │   │   │   ├── ChangePasswordCommandHandler.cs
+│   │   │   │   │   │   └── ChangePasswordCommandValidator.cs
+│   │   │   │   │   │
+│   │   │   │   │   └── ForgotPassword/
+│   │   │   │   │       ├── ForgotPasswordCommand.cs
+│   │   │   │   │       ├── ForgotPasswordCommandHandler.cs
+│   │   │   │   │       ├── ResetPasswordCommand.cs
+│   │   │   │   │       └── ResetPasswordCommandHandler.cs
+│   │   │   │   │
+│   │   │   │   ├── Queries/
+│   │   │   │   │   ├── GetCurrentUser/
+│   │   │   │   │   │   ├── GetCurrentUserQuery.cs
+│   │   │   │   │   │   └── GetCurrentUserQueryHandler.cs
+│   │   │   │   │   │
+│   │   │   │   │   └── ValidateToken/
+│   │   │   │   │       ├── ValidateTokenQuery.cs
+│   │   │   │   │       └── ValidateTokenQueryHandler.cs
+│   │   │   │   │
+│   │   │   │   └── DTOs/
+│   │   │   │       ├── AuthResponseDto.cs
+│   │   │   │       ├── TokenDto.cs
+│   │   │   │       ├── UserDto.cs
+│   │   │   │       └── RegisterDto.cs
+│   │   │   │
+│   │   │   ├── Customers/  ⭐ FEATURE 2
+│   │   │   │   ├── Commands/
+│   │   │   │   │   ├── CreateCustomerProfile/
+│   │   │   │   │   │   ├── CreateCustomerProfileCommand.cs
+│   │   │   │   │   │   ├── CreateCustomerProfileCommandHandler.cs
+│   │   │   │   │   │   └── CreateCustomerProfileCommandValidator.cs
+│   │   │   │   │   │
+│   │   │   │   │   ├── UpdateCustomerProfile/
+│   │   │   │   │   │   ├── UpdateCustomerProfileCommand.cs
+│   │   │   │   │   │   └── UpdateCustomerProfileCommandHandler.cs
+│   │   │   │   │   │
+│   │   │   │   │   ├── AddAddress/
+│   │   │   │   │   │   ├── AddAddressCommand.cs
+│   │   │   │   │   │   └── AddAddressCommandHandler.cs
+│   │   │   │   │   │
+│   │   │   │   │   ├── UpdateAddress/
+│   │   │   │   │   │   ├── UpdateAddressCommand.cs
+│   │   │   │   │   │   └── UpdateAddressCommandHandler.cs
+│   │   │   │   │   │
+│   │   │   │   │   └── DeleteAddress/
+│   │   │   │   │       ├── DeleteAddressCommand.cs
+│   │   │   │   │       └── DeleteAddressCommandHandler.cs
+│   │   │   │   │
+│   │   │   │   ├── Queries/
+│   │   │   │   │   ├── GetCustomerProfile/
+│   │   │   │   │   │   ├── GetCustomerProfileQuery.cs
+│   │   │   │   │   │   └── GetCustomerProfileQueryHandler.cs
+│   │   │   │   │   │
+│   │   │   │   │   ├── GetCustomerAddresses/
+│   │   │   │   │   │   ├── GetCustomerAddressesQuery.cs
+│   │   │   │   │   │   └── GetCustomerAddressesQueryHandler.cs
+│   │   │   │   │   │
+│   │   │   │   │   └── GetLoyaltyPoints/
+│   │   │   │   │       ├── GetLoyaltyPointsQuery.cs
+│   │   │   │   │       └── GetLoyaltyPointsQueryHandler.cs
+│   │   │   │   │
+│   │   │   │   └── DTOs/
+│   │   │   │       ├── CustomerProfileDto.cs
+│   │   │   │       ├── CustomerAddressDto.cs
+│   │   │   │       └── LoyaltyPointsDto.cs
+│   │   │   │
+│   │   │   ├── Menu/  ⭐ FEATURE 3
+│   │   │   │   ├── Commands/
+│   │   │   │   │   ├── CreateCategory/
+│   │   │   │   │   │   ├── CreateCategoryCommand.cs
+│   │   │   │   │   │   ├── CreateCategoryCommandHandler.cs
+│   │   │   │   │   │   └── CreateCategoryCommandValidator.cs
+│   │   │   │   │   │
+│   │   │   │   │   ├── CreateMenuItem/
+│   │   │   │   │   │   ├── CreateMenuItemCommand.cs
+│   │   │   │   │   │   ├── CreateMenuItemCommandHandler.cs
+│   │   │   │   │   │   └── CreateMenuItemCommandValidator.cs
+│   │   │   │   │   │
+│   │   │   │   │   ├── UpdateMenuItem/
+│   │   │   │   │   │   ├── UpdateMenuItemCommand.cs
+│   │   │   │   │   │   └── UpdateMenuItemCommandHandler.cs
+│   │   │   │   │   │
+│   │   │   │   │   ├── DeleteMenuItem/
+│   │   │   │   │   │   ├── DeleteMenuItemCommand.cs
+│   │   │   │   │   │   └── DeleteMenuItemCommandHandler.cs
+│   │   │   │   │   │
+│   │   │   │   │   ├── CreateOptionGroup/
+│   │   │   │   │   │   ├── CreateOptionGroupCommand.cs
+│   │   │   │   │   │   └── CreateOptionGroupCommandHandler.cs
+│   │   │   │   │   │
+│   │   │   │   │   └── AddOption/
+│   │   │   │   │       ├── AddOptionCommand.cs
+│   │   │   │   │       └── AddOptionCommandHandler.cs
+│   │   │   │   │
+│   │   │   │   ├── Queries/
+│   │   │   │   │   ├── GetMenuItems/
+│   │   │   │   │   │   ├── GetMenuItemsQuery.cs
+│   │   │   │   │   │   └── GetMenuItemsQueryHandler.cs
+│   │   │   │   │   │
+│   │   │   │   │   ├── GetMenuItemById/
+│   │   │   │   │   │   ├── GetMenuItemByIdQuery.cs
+│   │   │   │   │   │   └── GetMenuItemByIdQueryHandler.cs
+│   │   │   │   │   │
+│   │   │   │   │   ├── GetCategories/
+│   │   │   │   │   │   ├── GetCategoriesQuery.cs
+│   │   │   │   │   │   └── GetCategoriesQueryHandler.cs
+│   │   │   │   │   │
+│   │   │   │   │   └── GetFeaturedItems/
+│   │   │   │   │       ├── GetFeaturedItemsQuery.cs
+│   │   │   │   │       └── GetFeaturedItemsQueryHandler.cs
+│   │   │   │   │
+│   │   │   │   └── DTOs/
+│   │   │   │       ├── MenuItemDto.cs
+│   │   │   │       ├── MenuItemDetailDto.cs
+│   │   │   │       ├── CategoryDto.cs
+│   │   │   │       ├── OptionGroupDto.cs
+│   │   │   │       └── OptionDto.cs
+│   │   │   │
+│   │   │   ├── Orders/  ⭐ FEATURE 4 (Core Business Logic)
+│   │   │   │   ├── Commands/
+│   │   │   │   │   ├── CreateOrder/
+│   │   │   │   │   │   ├── CreateOrderCommand.cs
+│   │   │   │   │   │   ├── CreateOrderCommandHandler.cs
+│   │   │   │   │   │   └── CreateOrderCommandValidator.cs
+│   │   │   │   │   │
+│   │   │   │   │   ├── UpdateOrderStatus/
+│   │   │   │   │   │   ├── UpdateOrderStatusCommand.cs
+│   │   │   │   │   │   ├── UpdateOrderStatusCommandHandler.cs
+│   │   │   │   │   │   └── UpdateOrderStatusCommandValidator.cs
+│   │   │   │   │   │
+│   │   │   │   │   ├── CancelOrder/
+│   │   │   │   │   │   ├── CancelOrderCommand.cs
+│   │   │   │   │   │   └── CancelOrderCommandHandler.cs
+│   │   │   │   │   │
+│   │   │   │   │   ├── AddOrderNote/
+│   │   │   │   │   │   ├── AddOrderNoteCommand.cs
+│   │   │   │   │   │   └── AddOrderNoteCommandHandler.cs
+│   │   │   │   │   │
+│   │   │   │   │   └── AssignDriver/
+│   │   │   │   │       ├── AssignDriverCommand.cs
+│   │   │   │   │       └── AssignDriverCommandHandler.cs
+│   │   │   │   │
+│   │   │   │   ├── Queries/
+│   │   │   │   │   ├── GetOrderById/
+│   │   │   │   │   │   ├── GetOrderByIdQuery.cs
+│   │   │   │   │   │   └── GetOrderByIdQueryHandler.cs
+│   │   │   │   │   │
+│   │   │   │   │   ├── GetMyOrders/
+│   │   │   │   │   │   ├── GetMyOrdersQuery.cs
+│   │   │   │   │   │   └── GetMyOrdersQueryHandler.cs
+│   │   │   │   │   │
+│   │   │   │   │   ├── GetActiveOrders/
+│   │   │   │   │   │   ├── GetActiveOrdersQuery.cs
+│   │   │   │   │   │   └── GetActiveOrdersQueryHandler.cs
+│   │   │   │   │   │
+│   │   │   │   │   └── GetOrderHistory/
+│   │   │   │   │       ├── GetOrderHistoryQuery.cs
+│   │   │   │   │       └── GetOrderHistoryQueryHandler.cs
+│   │   │   │   │
+│   │   │   │   ├── EventHandlers/
+│   │   │   │   │   ├── OrderCreatedEventHandler.cs
+│   │   │   │   │   ├── OrderStatusChangedEventHandler.cs
+│   │   │   │   │   └── OrderCompletedEventHandler.cs
+│   │   │   │   │
+│   │   │   │   └── DTOs/
+│   │   │   │       ├── OrderDto.cs
+│   │   │   │       ├── OrderDetailDto.cs
+│   │   │   │       ├── OrderItemDto.cs
+│   │   │   │       ├── CreateOrderDto.cs
+│   │   │   │       └── OrderSummaryDto.cs
+│   │   │   │
+│   │   │   ├── Payments/  ⭐ FEATURE 5
+│   │   │   │   ├── Commands/
+│   │   │   │   │   ├── ProcessPayment/
+│   │   │   │   │   │   ├── ProcessPaymentCommand.cs
+│   │   │   │   │   │   ├── ProcessPaymentCommandHandler.cs
+│   │   │   │   │   │   └── ProcessPaymentCommandValidator.cs
+│   │   │   │   │   │
+│   │   │   │   │   └── RefundPayment/
+│   │   │   │   │       ├── RefundPaymentCommand.cs
+│   │   │   │   │       └── RefundPaymentCommandHandler.cs
+│   │   │   │   │
+│   │   │   │   ├── Queries/
+│   │   │   │   │   └── GetPaymentHistory/
+│   │   │   │   │       ├── GetPaymentHistoryQuery.cs
+│   │   │   │   │       └── GetPaymentHistoryQueryHandler.cs
+│   │   │   │   │
+│   │   │   │   └── DTOs/
+│   │   │   │       ├── PaymentDto.cs
+│   │   │   │       └── PaymentResponseDto.cs
+│   │   │   │
+│   │   │   ├── Reservations/  ⭐ FEATURE 6
+│   │   │   │   ├── Commands/
+│   │   │   │   │   ├── CreateReservation/
+│   │   │   │   │   │   ├── CreateReservationCommand.cs
+│   │   │   │   │   │   ├── CreateReservationCommandHandler.cs
+│   │   │   │   │   │   └── CreateReservationCommandValidator.cs
+│   │   │   │   │   │
+│   │   │   │   │   ├── ConfirmReservation/
+│   │   │   │   │   │   ├── ConfirmReservationCommand.cs
+│   │   │   │   │   │   └── ConfirmReservationCommandHandler.cs
+│   │   │   │   │   │
+│   │   │   │   │   └── CancelReservation/
+│   │   │   │   │       ├── CancelReservationCommand.cs
+│   │   │   │   │       └── CancelReservationCommandHandler.cs
+│   │   │   │   │
+│   │   │   │   ├── Queries/
+│   │   │   │   │   ├── GetMyReservations/
+│   │   │   │   │   │   ├── GetMyReservationsQuery.cs
+│   │   │   │   │   │   └── GetMyReservationsQueryHandler.cs
+│   │   │   │   │   │
+│   │   │   │   │   ├── GetTodaysReservations/
+│   │   │   │   │   │   ├── GetTodaysReservationsQuery.cs
+│   │   │   │   │   │   └── GetTodaysReservationsQueryHandler.cs
+│   │   │   │   │   │
+│   │   │   │   │   └── GetAvailableTables/
+│   │   │   │   │       ├── GetAvailableTablesQuery.cs
+│   │   │   │   │       └── GetAvailableTablesQueryHandler.cs
+│   │   │   │   │
+│   │   │   │   └── DTOs/
+│   │   │   │       ├── ReservationDto.cs
+│   │   │   │       ├── TableAvailabilityDto.cs
+│   │   │   │       └── CreateReservationDto.cs
+│   │   │   │
+│   │   │   ├── Inventory/  ⭐ FEATURE 7 (Staff Only)
+│   │   │   │   ├── Commands/
+│   │   │   │   │   ├── AdjustInventory/
+│   │   │   │   │   │   ├── AdjustInventoryCommand.cs
+│   │   │   │   │   │   └── AdjustInventoryCommandHandler.cs
+│   │   │   │   │   │
+│   │   │   │   │   └── RestockItem/
+│   │   │   │   │       ├── RestockItemCommand.cs
+│   │   │   │   │       └── RestockItemCommandHandler.cs
+│   │   │   │   │
+│   │   │   │   ├── Queries/
+│   │   │   │   │   ├── GetLowStockItems/
+│   │   │   │   │   │   ├── GetLowStockItemsQuery.cs
+│   │   │   │   │   │   └── GetLowStockItemsQueryHandler.cs
+│   │   │   │   │   │
+│   │   │   │   │   └── GetInventoryReport/
+│   │   │   │   │       ├── GetInventoryReportQuery.cs
+│   │   │   │   │       └── GetInventoryReportQueryHandler.cs
+│   │   │   │   │
+│   │   │   │   └── DTOs/
+│   │   │   │       ├── InventoryItemDto.cs
+│   │   │   │       └── InventoryTransactionDto.cs
+│   │   │   │
+│   │   │   ├── Reviews/  ⭐ FEATURE 8
+│   │   │   │   ├── Commands/
+│   │   │   │   │   ├── CreateReview/
+│   │   │   │   │   │   ├── CreateReviewCommand.cs
+│   │   │   │   │   │   ├── CreateReviewCommandHandler.cs
+│   │   │   │   │   │   └── CreateReviewCommandValidator.cs
+│   │   │   │   │   │
+│   │   │   │   │   └── RespondToReview/
+│   │   │   │   │       ├── RespondToReviewCommand.cs
+│   │   │   │   │       └── RespondToReviewCommandHandler.cs
+│   │   │   │   │
+│   │   │   │   ├── Queries/
+│   │   │   │   │   └── GetMenuItemReviews/
+│   │   │   │   │       ├── GetMenuItemReviewsQuery.cs
+│   │   │   │   │       └── GetMenuItemReviewsQueryHandler.cs
+│   │   │   │   │
+│   │   │   │   └── DTOs/
+│   │   │   │       └── ReviewDto.cs
+│   │   │   │
+│   │   │   └── Reports/  ⭐ FEATURE 9 (Admin/Manager Only)
+│   │   │       ├── Queries/
+│   │   │       │   ├── GetSalesReport/
+│   │   │       │   │   ├── GetSalesReportQuery.cs
+│   │   │       │   │   └── GetSalesReportQueryHandler.cs
+│   │   │       │   │
+│   │   │       │   ├── GetPopularItems/
+│   │   │       │   │   ├── GetPopularItemsQuery.cs
+│   │   │       │   │   └── GetPopularItemsQueryHandler.cs
+│   │   │       │   │
+│   │   │       │   └── GetCustomerAnalytics/
+│   │   │       │       ├── GetCustomerAnalyticsQuery.cs
+│   │   │       │       └── GetCustomerAnalyticsQueryHandler.cs
+│   │   │       │
+│   │   │       └── DTOs/
+│   │   │           ├── SalesReportDto.cs
+│   │   │           └── AnalyticsDto.cs
+│   │   │
+│   │   ├── DependencyInjection.cs
+│   │   └── RestaurantSystem.Application.csproj
+│   │
+│   ├── RestaurantSystem.Infrastructure/
+│   │   ├── Identity/
+│   │   │   ├── IdentityService.cs
+│   │   │   ├── TokenService.cs
+│   │   │   ├── CurrentUserService.cs
+│   │   │   └── ApplicationUser.cs
+│   │   │
+│   │   ├── Persistence/
+│   │   │   ├── ApplicationDbContext.cs
+│   │   │   ├── ApplicationDbContextInitializer.cs
+│   │   │   │
+│   │   │   ├── Configurations/
+│   │   │   │   ├── ApplicationUserConfiguration.cs
+│   │   │   │   ├── CustomerConfiguration.cs
+│   │   │   │   ├── OrderConfiguration.cs
+│   │   │   │   ├── MenuItemConfiguration.cs
+│   │   │   │   └── [... other configurations]
+│   │   │   │
+│   │   │   ├── Interceptors/
+│   │   │   │   ├── AuditableEntityInterceptor.cs
+│   │   │   │   └── SoftDeleteInterceptor.cs
+│   │   │   │
+│   │   │   └── Migrations/
+│   │   │       └── [Generated migrations]
+│   │   │
+│   │   ├── Services/
+│   │   │   ├── DateTimeService.cs
+│   │   │   ├── EmailService.cs
+│   │   │   └── CacheService.cs
+│   │   │
+│   │   ├── DependencyInjection.cs
+│   │   └── RestaurantSystem.Infrastructure.csproj
+│   │
+│   └── RestaurantSystem.WebAPI/
+│       ├── Controllers/
+│       │   ├── AuthController.cs  ⭐ START
+│       │   ├── CustomersController.cs
+│       │   ├── MenuController.cs
+│       │   ├── OrdersController.cs
+│       │   ├── PaymentsController.cs
+│       │   ├── ReservationsController.cs
+│       │   ├── InventoryController.cs
+│       │   ├── ReviewsController.cs
+│       │   └── ReportsController.cs
+│       │
+│       ├── Middleware/
+│       │   ├── ExceptionHandlingMiddleware.cs
+│       │   └── JwtMiddleware.cs
+│       │
+│       ├── Filters/
+│       │   └── AuthorizeAttribute.cs
+│       │
+│       ├── appsettings.json
+│       ├── appsettings.Development.json
+│       ├── Program.cs
+│       └── RestaurantSystem.WebAPI.csproj
+│
+└── RestaurantSystem.sln
