@@ -1,6 +1,6 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
+using RestaurantSystem.Domain.Entities;
 using RestaurantSystem.Domain.Entities.Identity;
-
 
 namespace RestaurantSystem.Infrastructure.Persistence;
 
@@ -23,6 +23,7 @@ public class ApplicationDbContext : DbContext
     public DbSet<ApplicationUser> Users { get; set; } = null!;
     public DbSet<UserRole> UserRoles { get; set; } = null!;
     public DbSet<RefreshToken> RefreshTokens { get; set; } = null!;
+    public DbSet<AuditLog> AuditLogs { get; set; } = null!;
 
     // Customers (add when you create them)
     // public DbSet<Customer> Customers { get; set; } = null!;

@@ -15,46 +15,51 @@ public class EmailService : IEmailService
     private readonly ILogger<EmailService> _logger;
     private readonly IConfiguration _configuration;
     private readonly EmailSettings _settings;
+    private readonly IBackgroundTaskQueue _taskQueue;
 
     public EmailService(
         ILogger<EmailService> logger,
-        IConfiguration configuration)
+        IConfiguration configuration,
+        IBackgroundTaskQueue taskQueue)
     {
         _logger = logger;
         _configuration = configuration;
+        _taskQueue = taskQueue;
         _settings = _configuration.GetSection("EmailSettings").Get<EmailSettings>()
             ?? throw new InvalidOperationException("EmailSettings configuration is missing");
     }
 
     public async Task SendEmailAsync(string to, string subject, string body, bool isHtml = true)
     {
-        try
+        await _taskQueue.QueueBackgroundWorkItemAsync(async ct =>
         {
-            using var message = new MailMessage
+            try
             {
-                From = new MailAddress(_settings.FromEmail, _settings.FromName),
-                Subject = subject,
-                Body = body,
-                IsBodyHtml = isHtml
-            };
+                using var message = new MailMessage
+                {
+                    From = new MailAddress(_settings.FromEmail, _settings.FromName),
+                    Subject = subject,
+                    Body = body,
+                    IsBodyHtml = isHtml
+                };
 
-            message.To.Add(new MailAddress(to));
+                message.To.Add(new MailAddress(to));
 
-            using var client = new SmtpClient(_settings.SmtpHost, _settings.SmtpPort)
+                using var client = new SmtpClient(_settings.SmtpHost, _settings.SmtpPort)
+                {
+                    Credentials = new NetworkCredential(_settings.SmtpUser, _settings.SmtpPass),
+                    EnableSsl = true
+                };
+
+                await client.SendMailAsync(message);
+
+                _logger.LogInformation("Email sent to {To}, Subject: {Subject}", to, subject);
+            }
+            catch (Exception ex)
             {
-                Credentials = new NetworkCredential(_settings.SmtpUser, _settings.SmtpPass),
-                EnableSsl = true
-            };
-
-            await client.SendMailAsync(message);
-
-            _logger.LogInformation("Email sent to {To}, Subject: {Subject}", to, subject);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to send email to {To}", to);
-            throw;
-        }
+                _logger.LogError(ex, "Failed to send email to {To}", to);
+            }
+        });
     }
 
     public async Task SendEmailAsync(IEnumerable<string> to, string subject, string body, bool isHtml = true)

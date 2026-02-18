@@ -14,6 +14,7 @@ using RestaurantSystem.Application.Common.Interfaces;
 using RestaurantSystem.Application.Features.Auth.Commands.Register;
 using RestaurantSystem.Infrastructure.Identity;
 using RestaurantSystem.Infrastructure.Persistence;
+using RestaurantSystem.Infrastructure.Persistence.Interceptors;
 using RestaurantSystem.Infrastructure.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -71,11 +72,19 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
 var enableSensitiveDataLogging = builder.Configuration.GetValue<bool?>("EfCore:EnableSensitiveDataLogging") ?? false;
 var enableDetailedErrors = builder.Configuration.GetValue<bool?>("EfCore:EnableDetailedErrors") ?? false;
 
-builder.Services.AddDbContext<ApplicationDbContext>(options =>
+builder.Services.AddScoped<AuditableEntityInterceptor>();
+builder.Services.AddScoped<SoftDeleteInterceptor>();
+builder.Services.AddScoped<AuditLogInterceptor>();
+
+builder.Services.AddDbContext<ApplicationDbContext>((sp, options) =>
 {
     options.UseNpgsql(connectionString);
     options.EnableSensitiveDataLogging(enableSensitiveDataLogging);
     options.EnableDetailedErrors(enableDetailedErrors);
+    options.AddInterceptors(
+        sp.GetRequiredService<AuditableEntityInterceptor>(),
+        sp.GetRequiredService<SoftDeleteInterceptor>(),
+        sp.GetRequiredService<AuditLogInterceptor>());
 });
 
 // VERSIONING
@@ -101,6 +110,9 @@ builder.Services.AddHttpContextAccessor();
 // MEDIATR + VALIDATION
 builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssemblyContaining<RegisterCommand>());
 builder.Services.AddValidatorsFromAssemblyContaining<RegisterCommandValidator>();
+builder.Services.AddTransient(typeof(IPipelineBehavior<,>), typeof(UnhandledExceptionBehavior<,>));
+builder.Services.AddTransient(typeof(IPipelineBehavior<,>), typeof(PerformanceBehavior<,>));
+builder.Services.AddTransient(typeof(IPipelineBehavior<,>), typeof(LoggingBehavior<,>));
 builder.Services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
 
 // AUTH SERVICES
@@ -110,6 +122,8 @@ builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<IDateTime, DateTimeService>();
 builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
 builder.Services.AddScoped<ApplicationDbContextInitializer>();
+builder.Services.AddSingleton<IBackgroundTaskQueue, BackgroundTaskQueue>();
+builder.Services.AddHostedService<QueuedHostedService>();
 
 // JWT AUTH
 var jwtSecret = builder.Configuration["JwtSettings:SecretKey"]

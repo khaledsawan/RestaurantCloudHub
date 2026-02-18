@@ -8,7 +8,7 @@ namespace RestaurantSystem.Domain.Entities.Identity;
 /// Note: This is domain entity, NOT identity user yet
 /// We'll extend this in Infrastructure layer with IdentityUser
 /// </summary>
-public class ApplicationUser : BaseEntity
+public class ApplicationUser : BaseAuditableEntity
 {
     public string Email { get; set; } = string.Empty;
     public string FirstName { get; set; } = string.Empty;
