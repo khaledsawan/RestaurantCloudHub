@@ -10,6 +10,8 @@ public interface IIdentityService
     Task<Result<AuthResult>> RefreshTokenAsync(string refreshToken);
     Task<Result> ConfirmEmailAsync(string email, string token);
     Task<Result> ResendConfirmationAsync(string email);
+    Task<Result> ForgotPasswordAsync(string email);
+    Task<Result> ResetPasswordAsync(string email, string code, string newPassword);
     Task<Result> ChangePasswordAsync(int userId, string currentPassword, string newPassword);
     Task<Result<UserDto>> GetUserByIdAsync(int userId);
     Task<Result<UserDto>> GetUserByEmailAsync(string email);
@@ -27,5 +29,6 @@ public class UserDto
     public string FirstName { get; set; } = string.Empty;
     public string LastName { get; set; } = string.Empty;
     public IEnumerable<string> Roles { get; set; } = new List<string>();
+    public bool EmailConfirmed { get; set; }
     public DateTime CreatedAt { get; set; }
 }

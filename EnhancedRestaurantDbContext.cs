@@ -474,6 +474,22 @@ namespace RestaurantApp.Data
                 new Role { RoleId = 5, RoleName = "Cashier", Description = "Payment processing", Permissions = "[\"orders.view\",\"payments.process\"]" },
                 new Role { RoleId = 6, RoleName = "Delivery", Description = "Delivery driver", Permissions = "[\"orders.view\",\"orders.deliver\"]" }
             );
+
+            // Seed default admin staff (replace password hash in real systems)
+            modelBuilder.Entity<Staff>().HasData(
+                new Staff
+                {
+                    StaffId = 1,
+                    RoleId = 1,
+                    Email = "admin@restaurant.com",
+                    PasswordHash = "CHANGE_ME_HASH",
+                    FirstName = "Admin",
+                    LastName = "User",
+                    HireDate = new DateTime(2024, 1, 1),
+                    EmploymentStatus = "active",
+                    IsActive = true
+                }
+            );
         }
 
         public override int SaveChanges()

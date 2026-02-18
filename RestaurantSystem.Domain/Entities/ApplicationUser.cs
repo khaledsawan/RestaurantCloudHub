@@ -22,6 +22,9 @@ public class ApplicationUser : BaseEntity
     public string? EmailConfirmationTokenHash { get; set; }
     public DateTime? EmailConfirmationTokenExpiresAt { get; set; }
     public DateTime? LastConfirmationSentAt { get; set; }
+    public string? PasswordResetTokenHash { get; set; }
+    public DateTime? PasswordResetTokenExpiresAt { get; set; }
+    public DateTime? LastPasswordResetSentAt { get; set; }
     
     // Navigation properties
     public virtual ICollection<UserRole> UserRoles { get; set; } = new List<UserRole>();

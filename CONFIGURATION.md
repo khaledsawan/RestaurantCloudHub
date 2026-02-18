@@ -36,6 +36,11 @@ From the repo root:
 dotnet user-secrets --project RestaurantSystem.API init
 dotnet user-secrets --project RestaurantSystem.API set "ConnectionStrings:DefaultConnection" "Host=localhost;Port=5432;Database=restaurant_db;Username=postgres;Password=YOUR_PASSWORD;SSL Mode=Disable"
 dotnet user-secrets --project RestaurantSystem.API list
+dotnet user-secrets set "Admin:Email" "admin@restaurant.com" -p RestaurantSystem.WebAPI
+dotnet user-secrets set "Admin:Password" "StrongPassword123!" -p RestaurantSystem.WebAPI
+dotnet user-secrets set "Admin:FirstName" "Admin" -p RestaurantSystem.WebAPI
+dotnet user-secrets set "Admin:LastName" "User" -p RestaurantSystem.WebAPI
+
 ```
 
 To remove a secret:

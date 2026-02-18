@@ -7,6 +7,11 @@ using RestaurantSystem.Application.Features.Auth.Commands.RefreshToken;
 using RestaurantSystem.Application.Features.Auth.Commands.ConfirmEmail;
 using RestaurantSystem.Application.Features.Auth.Commands.ResendConfirmation;
 using RestaurantSystem.Application.Features.Auth.Commands.Logout;
+using RestaurantSystem.Application.Features.Auth.Commands.ChangePassword;
+using RestaurantSystem.Application.Features.Auth.Commands.ForgotPassword;
+using RestaurantSystem.Application.Features.Auth.Commands.ResetPassword;
+using RestaurantSystem.Application.Features.Auth.Queries.GetCurrentUser;
+using RestaurantSystem.Application.Features.Auth.Queries.ValidateToken;
 
 namespace RestaurantSystem.WebAPI.Controllers;
 
@@ -104,6 +109,73 @@ public class AuthController : ControllerBase
         }
 
         return Ok(new { message = "Confirmation email sent" });
+    }
+
+    /// <summary>
+    /// Change password
+    /// </summary>
+    [HttpPost("change-password")]
+    [Authorize]
+    public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordCommand command)
+    {
+        var result = await _mediator.Send(command);
+
+        if (!result.Succeeded)
+        {
+            return BadRequest(new { errors = result.Errors });
+        }
+
+        return Ok(new { message = "Password changed successfully" });
+    }
+
+    /// <summary>
+    /// Forgot password - send reset code
+    /// </summary>
+    [HttpPost("forgot-password")]
+    [AllowAnonymous]
+    public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordCommand command)
+    {
+        await _mediator.Send(command);
+        return Ok(new { message = "If the email exists, a reset code has been sent." });
+    }
+
+    /// <summary>
+    /// Reset password with code
+    /// </summary>
+    [HttpPost("reset-password")]
+    [AllowAnonymous]
+    public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordCommand command)
+    {
+        var result = await _mediator.Send(command);
+
+        if (!result.Succeeded)
+        {
+            return BadRequest(new { errors = result.Errors });
+        }
+
+        return Ok(new { message = "Password reset successfully" });
+    }
+
+    /// <summary>
+    /// Get current user
+    /// </summary>
+    [HttpGet("me")]
+    [Authorize]
+    public async Task<IActionResult> Me()
+    {
+        var result = await _mediator.Send(new GetCurrentUserQuery());
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Validate token
+    /// </summary>
+    [HttpPost("validate-token")]
+    [AllowAnonymous]
+    public async Task<IActionResult> ValidateToken([FromBody] ValidateTokenQuery query)
+    {
+        var result = await _mediator.Send(query);
+        return Ok(result);
     }
     /// <summary>
     /// Resend confirmation email

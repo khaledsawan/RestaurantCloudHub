@@ -153,6 +153,20 @@ public class EmailService : IEmailService
 
         await SendEmailAsync(to, subject, body);
     }
+
+    public async Task SendPasswordResetCodeAsync(string to, string code, string firstName)
+    {
+        var subject = "Reset your password";
+        var body = $@"
+            <h1>Hi {firstName},</h1>
+            <p>Use the code below to reset your password:</p>
+            <p><strong>{code}</strong></p>
+            <p>This code expires in 24 hours.</p>
+            <p>If you did not request a password reset, you can ignore this email.</p>
+        ";
+
+        await SendEmailAsync(to, subject, body);
+    }
 }
 
 internal sealed class EmailSettings

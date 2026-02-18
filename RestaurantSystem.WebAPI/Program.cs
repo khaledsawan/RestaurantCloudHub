@@ -109,6 +109,7 @@ builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<IDateTime, DateTimeService>();
 builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
+builder.Services.AddScoped<ApplicationDbContextInitializer>();
 
 // JWT AUTH
 var jwtSecret = builder.Configuration["JwtSettings:SecretKey"]
@@ -174,6 +175,13 @@ builder.Services.AddHealthChecks()
     .AddNpgSql(connectionString, name: "postgresql", tags: ["ready"]);
 
 var app = builder.Build();
+
+// SEED DATA
+using (var scope = app.Services.CreateScope())
+{
+    var initializer = scope.ServiceProvider.GetRequiredService<ApplicationDbContextInitializer>();
+    await initializer.SeedAsync();
+}
 
 // Swagger UI
 if (app.Environment.IsDevelopment())

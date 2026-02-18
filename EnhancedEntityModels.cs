@@ -331,6 +331,16 @@ namespace RestaurantApp.Models
         [Column("password_hash")]
         public string PasswordHash { get; set; } = string.Empty;
 
+        [MaxLength(256)]
+        [Column("password_reset_token_hash")]
+        public string? PasswordResetTokenHash { get; set; }
+
+        [Column("password_reset_token_expires_at")]
+        public DateTime? PasswordResetTokenExpiresAt { get; set; }
+
+        [Column("last_password_reset_sent_at")]
+        public DateTime? LastPasswordResetSentAt { get; set; }
+
         [Column("date_of_birth")]
         public DateOnly? DateOfBirth { get; set; }
 
@@ -529,6 +539,16 @@ namespace RestaurantApp.Models
         [MaxLength(255)]
         [Column("password_hash")]
         public string PasswordHash { get; set; } = string.Empty;
+
+        [MaxLength(256)]
+        [Column("password_reset_token_hash")]
+        public string? PasswordResetTokenHash { get; set; }
+
+        [Column("password_reset_token_expires_at")]
+        public DateTime? PasswordResetTokenExpiresAt { get; set; }
+
+        [Column("last_password_reset_sent_at")]
+        public DateTime? LastPasswordResetSentAt { get; set; }
 
         [Required]
         [MaxLength(100)]

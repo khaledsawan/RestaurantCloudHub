@@ -40,6 +40,16 @@ public class ApplicationUserConfiguration : IEntityTypeConfiguration<Application
         builder.Property(u => u.LastConfirmationSentAt)
             .IsRequired(false);
 
+        builder.Property(u => u.PasswordResetTokenHash)
+            .HasMaxLength(256)
+            .IsRequired(false);
+
+        builder.Property(u => u.PasswordResetTokenExpiresAt)
+            .IsRequired(false);
+
+        builder.Property(u => u.LastPasswordResetSentAt)
+            .IsRequired(false);
+
         builder.HasMany(u => u.UserRoles)
             .WithOne(ur => ur.User)
             .HasForeignKey(ur => ur.UserId)

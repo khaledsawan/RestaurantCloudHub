@@ -229,6 +229,66 @@ public class IdentityService : IIdentityService
         return Result.Success();
     }
 
+    public async Task<Result> ForgotPasswordAsync(string email)
+    {
+        var user = await _context.Set<ApplicationUser>()
+            .FirstOrDefaultAsync(u => u.Email == email.ToLowerInvariant());
+
+        if (user == null)
+        {
+            return Result.Success();
+        }
+
+        if (user.LastPasswordResetSentAt.HasValue &&
+            user.LastPasswordResetSentAt.Value.AddMinutes(2) > _dateTime.UtcNow)
+        {
+            return Result.Success();
+        }
+
+        var code = GenerateEmailCode();
+        user.PasswordResetTokenHash = HashToken(code);
+        user.PasswordResetTokenExpiresAt = _dateTime.UtcNow.AddHours(24);
+        user.LastPasswordResetSentAt = _dateTime.UtcNow;
+
+        await _context.SaveChangesAsync();
+
+        await _emailService.SendPasswordResetCodeAsync(user.Email, code, user.FirstName);
+
+        return Result.Success();
+    }
+
+    public async Task<Result> ResetPasswordAsync(string email, string code, string newPassword)
+    {
+        var user = await _context.Set<ApplicationUser>()
+            .FirstOrDefaultAsync(u => u.Email == email.ToLowerInvariant());
+
+        if (user == null)
+        {
+            return Result.Failure("Invalid email or code");
+        }
+
+        if (string.IsNullOrWhiteSpace(user.PasswordResetTokenHash) ||
+            !user.PasswordResetTokenExpiresAt.HasValue ||
+            user.PasswordResetTokenExpiresAt.Value < _dateTime.UtcNow)
+        {
+            return Result.Failure("Invalid or expired code");
+        }
+
+        if (!VerifyTokenHash(code, user.PasswordResetTokenHash))
+        {
+            return Result.Failure("Invalid or expired code");
+        }
+
+        user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(newPassword);
+        user.PasswordResetTokenHash = null;
+        user.PasswordResetTokenExpiresAt = null;
+        user.LastPasswordResetSentAt = null;
+
+        await _context.SaveChangesAsync();
+
+        return Result.Success();
+    }
+
     public async Task<Result<AuthResult>> RefreshTokenAsync(string refreshToken)
     {
         var storedToken = await _context.Set<RefreshToken>()
@@ -319,6 +379,7 @@ public class IdentityService : IIdentityService
             FirstName = user.FirstName,
             LastName = user.LastName,
             Roles = user.UserRoles.Select(r => r.RoleName),
+            EmailConfirmed = user.EmailConfirmed,
             CreatedAt = user.CreatedAt
         };
 
@@ -343,6 +404,7 @@ public class IdentityService : IIdentityService
             FirstName = user.FirstName,
             LastName = user.LastName,
             Roles = user.UserRoles.Select(r => r.RoleName),
+            EmailConfirmed = user.EmailConfirmed,
             CreatedAt = user.CreatedAt
         };
 
