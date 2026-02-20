@@ -50,6 +50,20 @@ public class ApplicationUserConfiguration : IEntityTypeConfiguration<Application
         builder.Property(u => u.LastPasswordResetSentAt)
             .IsRequired(false);
 
+        builder.Property(u => u.PendingEmail)
+            .HasMaxLength(255)
+            .IsRequired(false);
+
+        builder.Property(u => u.EmailChangeTokenHash)
+            .HasMaxLength(256)
+            .IsRequired(false);
+
+        builder.Property(u => u.EmailChangeTokenExpiresAt)
+            .IsRequired(false);
+
+        builder.Property(u => u.LastEmailChangeSentAt)
+            .IsRequired(false);
+
         builder.HasMany(u => u.UserRoles)
             .WithOne(ur => ur.User)
             .HasForeignKey(ur => ur.UserId)

@@ -10,6 +10,10 @@ using RestaurantSystem.Application.Features.Auth.Commands.Logout;
 using RestaurantSystem.Application.Features.Auth.Commands.ChangePassword;
 using RestaurantSystem.Application.Features.Auth.Commands.ForgotPassword;
 using RestaurantSystem.Application.Features.Auth.Commands.ResetPassword;
+using RestaurantSystem.Application.Features.Auth.Commands.ChangeEmail;
+using RestaurantSystem.Application.Features.Auth.Commands.DeleteAccount;
+using RestaurantSystem.Application.Features.Auth.Commands.SetUserActiveStatus;
+using RestaurantSystem.WebAPI.Models;
 using RestaurantSystem.Application.Features.Auth.Queries.GetCurrentUser;
 using RestaurantSystem.Application.Features.Auth.Queries.ValidateToken;
 
@@ -154,6 +158,71 @@ public class AuthController : ControllerBase
         }
 
         return Ok(new { message = "Password reset successfully" });
+    }
+
+    /// <summary>
+    /// Request email change (send code)
+    /// </summary>
+    [HttpPost("change-email-request")]
+    [Authorize]
+    public async Task<IActionResult> ChangeEmailRequest([FromBody] RequestEmailChangeCommand command)
+    {
+        var result = await _mediator.Send(command);
+        if (!result.Succeeded)
+        {
+            return BadRequest(new { errors = result.Errors });
+        }
+
+        return Ok(new { message = "Confirmation code sent" });
+    }
+
+    /// <summary>
+    /// Confirm email change
+    /// </summary>
+    [HttpPost("change-email-confirm")]
+    [Authorize]
+    public async Task<IActionResult> ChangeEmailConfirm([FromBody] ConfirmEmailChangeCommand command)
+    {
+        var result = await _mediator.Send(command);
+        if (!result.Succeeded)
+        {
+            return BadRequest(new { errors = result.Errors });
+        }
+
+        return Ok(new { message = "Email updated successfully" });
+    }
+
+    /// <summary>
+    /// Delete account (soft delete)
+    /// </summary>
+    [HttpPost("delete-account")]
+    [Authorize]
+    public async Task<IActionResult> DeleteAccount()
+    {
+        var result = await _mediator.Send(new DeleteAccountCommand());
+        if (!result.Succeeded)
+        {
+            return BadRequest(new { errors = result.Errors });
+        }
+
+        return Ok(new { message = "Account deleted" });
+    }
+
+    /// <summary>
+    /// Admin: update user active status
+    /// </summary>
+    [HttpPatch("admin/users/{userId:int}/status")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> SetUserStatus(int userId, [FromBody] SetUserActiveStatusRequest request)
+    {
+        var command = new SetUserActiveStatusCommand(userId, request.IsActive);
+        var result = await _mediator.Send(command);
+        if (!result.Succeeded)
+        {
+            return BadRequest(new { errors = result.Errors });
+        }
+
+        return Ok(new { message = "User status updated" });
     }
 
     /// <summary>

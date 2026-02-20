@@ -1,11 +1,15 @@
+using System;
+using System.Collections.Generic;
 using System.Text.Json;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Diagnostics;
+using Microsoft.Extensions.Options;
 using RestaurantSystem.Application.Common.Interfaces;
 using RestaurantSystem.Domain.Common;
 using RestaurantSystem.Domain.Entities;
+using RestaurantSystem.Infrastructure.Options;
 
 namespace RestaurantSystem.Infrastructure.Persistence.Interceptors;
 
@@ -17,17 +21,23 @@ public class AuditLogInterceptor : SaveChangesInterceptor
     private readonly ICurrentUserService _currentUserService;
     private readonly IDateTime _dateTime;
     private readonly IHttpContextAccessor _httpContextAccessor;
+    private readonly HashSet<string> _tableWhitelist;
+    private readonly HashSet<string> _excludeColumns;
     private readonly List<AuditEntry> _pendingAuditEntries = new();
     private bool _suppress;
 
     public AuditLogInterceptor(
         ICurrentUserService currentUserService,
         IDateTime dateTime,
-        IHttpContextAccessor httpContextAccessor)
+        IHttpContextAccessor httpContextAccessor,
+        IOptions<AuditOptions> auditOptions)
     {
         _currentUserService = currentUserService;
         _dateTime = dateTime;
         _httpContextAccessor = httpContextAccessor;
+        var options = auditOptions.Value ?? new AuditOptions();
+        _tableWhitelist = new HashSet<string>(options.Tables ?? Array.Empty<string>(), StringComparer.OrdinalIgnoreCase);
+        _excludeColumns = new HashSet<string>(options.ExcludeColumns ?? Array.Empty<string>(), StringComparer.OrdinalIgnoreCase);
     }
 
     public override InterceptionResult<int> SavingChanges(
@@ -80,7 +90,12 @@ public class AuditLogInterceptor : SaveChangesInterceptor
 
         foreach (var entry in context.ChangeTracker.Entries())
         {
+            var tableName = entry.Metadata.GetTableName();
+
             if (entry.Entity is AuditLog)
+                continue;
+
+            if (!ShouldAudit(tableName))
                 continue;
 
             if (entry.State is not (EntityState.Added or EntityState.Modified or EntityState.Deleted))
@@ -94,6 +109,11 @@ public class AuditLogInterceptor : SaveChangesInterceptor
                 if (property.Metadata.IsPrimaryKey())
                 {
                     auditEntry.KeyProperty = property;
+                    continue;
+                }
+
+                if (_excludeColumns.Contains(property.Metadata.Name))
+                {
                     continue;
                 }
 
@@ -207,8 +227,18 @@ public class AuditLogInterceptor : SaveChangesInterceptor
             return "DELETE";
         }
 
-        return "UPDATE";
-    }
+            return "UPDATE";
+        }
+
+        private bool ShouldAudit(string? tableName)
+        {
+            if (string.IsNullOrWhiteSpace(tableName))
+            {
+                return false;
+            }
+
+            return _tableWhitelist.Count == 0 || _tableWhitelist.Contains(tableName);
+        }
 
     private sealed class AuditEntry
     {

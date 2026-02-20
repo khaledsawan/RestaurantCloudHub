@@ -13,6 +13,10 @@ public interface IIdentityService
     Task<Result> ForgotPasswordAsync(string email);
     Task<Result> ResetPasswordAsync(string email, string code, string newPassword);
     Task<Result> ChangePasswordAsync(int userId, string currentPassword, string newPassword);
+    Task<Result> RequestEmailChangeAsync(int userId, string newEmail);
+    Task<Result> ConfirmEmailChangeAsync(int userId, string newEmail, string code);
+    Task<Result> DeleteAccountAsync(int userId);
+    Task<Result> SetUserActiveStatusAsync(int userId, bool isActive);
     Task<Result<UserDto>> GetUserByIdAsync(int userId);
     Task<Result<UserDto>> GetUserByEmailAsync(string email);
     Task<bool> UserExistsAsync(int userId);

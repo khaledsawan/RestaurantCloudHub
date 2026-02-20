@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using RestaurantSystem.Application.Common.Interfaces;
 using RestaurantSystem.Domain.Entities;
 using RestaurantSystem.Domain.Entities.Identity;
 
@@ -8,7 +9,7 @@ namespace RestaurantSystem.Infrastructure.Persistence;
 /// Application database context
 /// Simple, direct, practical approach
 /// </summary>
-public class ApplicationDbContext : DbContext
+public class ApplicationDbContext : DbContext, IApplicationDbContext
 {
     public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
         : base(options)
@@ -25,20 +26,20 @@ public class ApplicationDbContext : DbContext
     public DbSet<RefreshToken> RefreshTokens { get; set; } = null!;
     public DbSet<AuditLog> AuditLogs { get; set; } = null!;
 
-    // Customers (add when you create them)
-    // public DbSet<Customer> Customers { get; set; } = null!;
-    // public DbSet<CustomerAddress> CustomerAddresses { get; set; } = null!;
+    // Customers
+    public DbSet<Customer> Customers { get; set; } = null!;
+    public DbSet<CustomerAddress> CustomerAddresses { get; set; } = null!;
 
     // Orders (add when you create them)
     // public DbSet<Order> Orders { get; set; } = null!;
     // public DbSet<OrderItem> OrderItems { get; set; } = null!;
     // public DbSet<OrderStatusHistory> OrderStatusHistories { get; set; } = null!;
 
-    // Menu (add when you create them)
-    // public DbSet<Category> Categories { get; set; } = null!;
-    // public DbSet<MenuItem> MenuItems { get; set; } = null!;
-    // public DbSet<MenuItemOptionGroup> MenuItemOptionGroups { get; set; } = null!;
-    // public DbSet<MenuItemOption> MenuItemOptions { get; set; } = null!;
+    // Menu
+    public DbSet<Category> Categories { get; set; } = null!;
+    public DbSet<MenuItem> MenuItems { get; set; } = null!;
+    public DbSet<MenuItemOptionGroup> MenuItemOptionGroups { get; set; } = null!;
+    public DbSet<MenuItemOption> MenuItemOptions { get; set; } = null!;
 
     // ========================================
     // Configuration

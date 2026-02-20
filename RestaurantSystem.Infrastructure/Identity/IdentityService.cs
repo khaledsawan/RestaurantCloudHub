@@ -3,6 +3,7 @@ using System.Text;
 using Microsoft.EntityFrameworkCore;
 using RestaurantSystem.Application.Common.Interfaces;
 using RestaurantSystem.Application.Common.Models;
+using RestaurantSystem.Domain.Entities;
 using RestaurantSystem.Domain.Entities.Identity;
 using BCrypt.Net;
 using RestaurantSystem.Infrastructure.Persistence;
@@ -196,6 +197,13 @@ public class IdentityService : IIdentityService
         user.EmailConfirmationTokenExpiresAt = null;
         user.LastConfirmationSentAt = null;
 
+        var customer = await _context.Set<Customer>()
+            .FirstOrDefaultAsync(c => c.UserId == user.Id);
+        if (customer != null)
+        {
+            customer.IsVerified = true;
+        }
+
         await _context.SaveChangesAsync();
 
         await _emailService.SendWelcomeEmailAsync(user.Email, user.FirstName);
@@ -283,6 +291,158 @@ public class IdentityService : IIdentityService
         user.PasswordResetTokenHash = null;
         user.PasswordResetTokenExpiresAt = null;
         user.LastPasswordResetSentAt = null;
+
+        await _context.SaveChangesAsync();
+
+        return Result.Success();
+    }
+
+    public async Task<Result> RequestEmailChangeAsync(int userId, string newEmail)
+    {
+        var user = await _context.Set<ApplicationUser>().FindAsync(userId);
+        if (user == null)
+        {
+            return Result.Failure("User not found");
+        }
+
+        var normalized = newEmail.ToLowerInvariant();
+        if (string.Equals(normalized, user.Email, StringComparison.OrdinalIgnoreCase))
+        {
+            return Result.Failure("New email must be different");
+        }
+
+        if (await EmailExistsAsync(normalized))
+        {
+            return Result.Failure("Email already in use");
+        }
+
+        if (user.LastEmailChangeSentAt.HasValue &&
+            user.LastEmailChangeSentAt.Value.AddMinutes(2) > _dateTime.UtcNow)
+        {
+            return Result.Failure("Please wait before requesting another email change");
+        }
+
+        var code = GenerateEmailCode();
+        user.PendingEmail = normalized;
+        user.EmailChangeTokenHash = HashToken(code);
+        user.EmailChangeTokenExpiresAt = _dateTime.UtcNow.AddHours(24);
+        user.LastEmailChangeSentAt = _dateTime.UtcNow;
+
+        await _context.SaveChangesAsync();
+
+        await _emailService.SendEmailChangeCodeAsync(normalized, code, user.FirstName);
+
+        return Result.Success();
+    }
+
+    public async Task<Result> ConfirmEmailChangeAsync(int userId, string newEmail, string code)
+    {
+        var user = await _context.Set<ApplicationUser>().FindAsync(userId);
+        if (user == null)
+        {
+            return Result.Failure("User not found");
+        }
+
+        var normalized = newEmail.ToLowerInvariant();
+        if (!string.Equals(user.PendingEmail, normalized, StringComparison.OrdinalIgnoreCase))
+        {
+            return Result.Failure("Email change not requested");
+        }
+
+        if (string.IsNullOrWhiteSpace(user.EmailChangeTokenHash) ||
+            !user.EmailChangeTokenExpiresAt.HasValue ||
+            user.EmailChangeTokenExpiresAt.Value < _dateTime.UtcNow)
+        {
+            return Result.Failure("Invalid or expired code");
+        }
+
+        if (!VerifyTokenHash(code, user.EmailChangeTokenHash))
+        {
+            return Result.Failure("Invalid or expired code");
+        }
+
+        user.Email = normalized;
+        user.EmailConfirmed = true;
+        user.PendingEmail = null;
+        user.EmailChangeTokenHash = null;
+        user.EmailChangeTokenExpiresAt = null;
+        user.LastEmailChangeSentAt = null;
+
+        var customer = await _context.Set<Customer>()
+            .FirstOrDefaultAsync(c => c.UserId == user.Id);
+        if (customer != null)
+        {
+            customer.Email = normalized;
+            customer.IsVerified = true;
+        }
+
+        await _context.SaveChangesAsync();
+
+        return Result.Success();
+    }
+
+    public async Task<Result> DeleteAccountAsync(int userId)
+    {
+        var user = await _context.Set<ApplicationUser>().FindAsync(userId);
+        if (user == null)
+        {
+            return Result.Failure("User not found");
+        }
+
+        user.IsActive = false;
+
+        var refreshTokens = await _context.Set<RefreshToken>()
+            .Where(rt => rt.UserId == userId && !rt.IsRevoked)
+            .ToListAsync();
+
+        foreach (var token in refreshTokens)
+        {
+            token.IsRevoked = true;
+            token.RevokedAt = _dateTime.UtcNow;
+        }
+
+        var customer = await _context.Set<Customer>()
+            .FirstOrDefaultAsync(c => c.UserId == userId);
+        if (customer != null)
+        {
+            customer.IsActive = false;
+            customer.DeletedAt = _dateTime.UtcNow;
+        }
+
+        await _context.SaveChangesAsync();
+
+        return Result.Success();
+    }
+
+    public async Task<Result> SetUserActiveStatusAsync(int userId, bool isActive)
+    {
+        var user = await _context.Set<ApplicationUser>().FindAsync(userId);
+        if (user == null)
+        {
+            return Result.Failure("User not found");
+        }
+
+        user.IsActive = isActive;
+
+        var customer = await _context.Set<Customer>()
+            .FirstOrDefaultAsync(c => c.UserId == userId);
+        if (customer != null)
+        {
+            customer.IsActive = isActive;
+        }
+
+        if (!isActive)
+        {
+            var refreshTokens = await _context.Set<RefreshToken>()
+                .Where(rt => rt.UserId == userId && !rt.IsRevoked)
+                .ToListAsync();
+
+            foreach (var token in refreshTokens)
+            {
+                token.IsRevoked = true;
+                token.RevokedAt = _dateTime.UtcNow;
+            }
+        }
 
         await _context.SaveChangesAsync();
 

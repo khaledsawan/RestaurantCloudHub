@@ -54,4 +54,9 @@ public interface IEmailService
     /// Send password reset code
     /// </summary>
     Task SendPasswordResetCodeAsync(string to, string code, string firstName);
+
+    /// <summary>
+    /// Send email change confirmation code
+    /// </summary>
+    Task SendEmailChangeCodeAsync(string to, string code, string firstName);
 }

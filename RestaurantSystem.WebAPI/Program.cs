@@ -13,9 +13,11 @@ using RestaurantSystem.Application.Common.Behaviors;
 using RestaurantSystem.Application.Common.Interfaces;
 using RestaurantSystem.Application.Features.Auth.Commands.Register;
 using RestaurantSystem.Infrastructure.Identity;
+using RestaurantSystem.Infrastructure.Options;
 using RestaurantSystem.Infrastructure.Persistence;
 using RestaurantSystem.Infrastructure.Persistence.Interceptors;
 using RestaurantSystem.Infrastructure.Services;
+using RestaurantSystem.WebAPI.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -72,6 +74,7 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
 var enableSensitiveDataLogging = builder.Configuration.GetValue<bool?>("EfCore:EnableSensitiveDataLogging") ?? false;
 var enableDetailedErrors = builder.Configuration.GetValue<bool?>("EfCore:EnableDetailedErrors") ?? false;
 
+builder.Services.Configure<AuditOptions>(builder.Configuration.GetSection("Audit"));
 builder.Services.AddScoped<AuditableEntityInterceptor>();
 builder.Services.AddScoped<SoftDeleteInterceptor>();
 builder.Services.AddScoped<AuditLogInterceptor>();
@@ -121,9 +124,11 @@ builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<IDateTime, DateTimeService>();
 builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
+builder.Services.AddScoped<IApplicationDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
 builder.Services.AddScoped<ApplicationDbContextInitializer>();
 builder.Services.AddSingleton<IBackgroundTaskQueue, BackgroundTaskQueue>();
 builder.Services.AddHostedService<QueuedHostedService>();
+builder.Services.AddScoped<IFileStorage, LocalFileStorage>();
 
 // JWT AUTH
 var jwtSecret = builder.Configuration["JwtSettings:SecretKey"]
@@ -216,6 +221,7 @@ if (!app.Environment.IsDevelopment())
 }
 
 app.UseForwardedHeaders();
+app.UseStaticFiles();
 app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();

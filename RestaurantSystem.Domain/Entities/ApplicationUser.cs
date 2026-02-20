@@ -25,6 +25,10 @@ public class ApplicationUser : BaseAuditableEntity
     public string? PasswordResetTokenHash { get; set; }
     public DateTime? PasswordResetTokenExpiresAt { get; set; }
     public DateTime? LastPasswordResetSentAt { get; set; }
+    public string? PendingEmail { get; set; }
+    public string? EmailChangeTokenHash { get; set; }
+    public DateTime? EmailChangeTokenExpiresAt { get; set; }
+    public DateTime? LastEmailChangeSentAt { get; set; }
     
     // Navigation properties
     public virtual ICollection<UserRole> UserRoles { get; set; } = new List<UserRole>();
