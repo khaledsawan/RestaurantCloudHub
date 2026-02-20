@@ -105,7 +105,12 @@ builder.Services.AddVersionedApiExplorer(options =>
 });
 
 // CONTROLLERS (API)
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.Converters.Add(
+            new System.Text.Json.Serialization.JsonStringEnumConverter(System.Text.Json.JsonNamingPolicy.CamelCase));
+    });
 
 // HTTP CONTEXT ACCESSOR (for CurrentUserService)
 builder.Services.AddHttpContextAccessor();
