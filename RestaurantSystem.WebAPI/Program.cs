@@ -75,6 +75,7 @@ var enableSensitiveDataLogging = builder.Configuration.GetValue<bool?>("EfCore:E
 var enableDetailedErrors = builder.Configuration.GetValue<bool?>("EfCore:EnableDetailedErrors") ?? false;
 
 builder.Services.Configure<AuditOptions>(builder.Configuration.GetSection("Audit"));
+builder.Services.Configure<OrderSettings>(builder.Configuration.GetSection(OrderSettings.SectionName));
 builder.Services.AddScoped<AuditableEntityInterceptor>();
 builder.Services.AddScoped<SoftDeleteInterceptor>();
 builder.Services.AddScoped<AuditLogInterceptor>();
@@ -129,6 +130,7 @@ builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<IDateTime, DateTimeService>();
 builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
+builder.Services.AddScoped<IOrderSettings, OrderSettingsService>();
 builder.Services.AddScoped<IApplicationDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
 builder.Services.AddScoped<ApplicationDbContextInitializer>();
 builder.Services.AddSingleton<IBackgroundTaskQueue, BackgroundTaskQueue>();

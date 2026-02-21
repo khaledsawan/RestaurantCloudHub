@@ -1,0 +1,13 @@
+using RestaurantSystem.Domain.Enums;
+
+namespace RestaurantSystem.Application.Features.Orders.DTOs;
+
+public class OrderDto
+{
+    public int Id { get; set; }
+    public string OrderNumber { get; set; } = string.Empty;
+    public OrderStatus OrderStatus { get; set; }
+    public OrderType OrderType { get; set; }
+    public decimal TotalAmount { get; set; }
+    public DateTime CreatedAt { get; set; }
+}

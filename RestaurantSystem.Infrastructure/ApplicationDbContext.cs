@@ -30,10 +30,12 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<Customer> Customers { get; set; } = null!;
     public DbSet<CustomerAddress> CustomerAddresses { get; set; } = null!;
 
-    // Orders (add when you create them)
-    // public DbSet<Order> Orders { get; set; } = null!;
-    // public DbSet<OrderItem> OrderItems { get; set; } = null!;
-    // public DbSet<OrderStatusHistory> OrderStatusHistories { get; set; } = null!;
+    // Orders
+    public DbSet<Staff> Staff { get; set; } = null!;
+    public DbSet<Order> Orders { get; set; } = null!;
+    public DbSet<OrderItem> OrderItems { get; set; } = null!;
+    public DbSet<OrderStatusHistory> OrderStatusHistories { get; set; } = null!;
+    public DbSet<OrderItemOption> OrderItemOptions { get; set; } = null!;
 
     // Menu
     public DbSet<Category> Categories { get; set; } = null!;
