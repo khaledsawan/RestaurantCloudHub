@@ -31,6 +31,11 @@ public class RespondToReviewCommandHandler : IRequestHandler<RespondToReviewComm
             .Select(s => (int?)s.Id)
             .FirstOrDefaultAsync(cancellationToken);
 
+        if (!staffId.HasValue)
+        {
+            return Result.Failure("Staff profile not found");
+        }
+
         review.ResponseText = request.ResponseText.Trim();
         review.RespondedById = staffId;
         review.RespondedAt = DateTime.UtcNow;

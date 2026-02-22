@@ -17,6 +17,7 @@ public class GetMenuItemReviewsQueryHandler : IRequestHandler<GetMenuItemReviews
     public async Task<List<ReviewDto>> Handle(GetMenuItemReviewsQuery request, CancellationToken cancellationToken)
     {
         var orderIds = await _context.OrderItems
+            .IgnoreQueryFilters()
             .Where(i => i.ItemId == request.MenuItemId)
             .Select(i => i.OrderId)
             .Distinct()
