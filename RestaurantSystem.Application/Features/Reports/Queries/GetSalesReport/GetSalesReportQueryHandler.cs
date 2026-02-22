@@ -17,7 +17,10 @@ public class GetSalesReportQueryHandler : IRequestHandler<GetSalesReportQuery, S
 
     public async Task<SalesReportDto> Handle(GetSalesReportQuery request, CancellationToken cancellationToken)
     {
-        var query = _context.Orders.AsNoTracking().Where(o => o.OrderStatus == OrderStatus.Completed);
+        var query = _context.Orders
+            .IgnoreQueryFilters()
+            .AsNoTracking()
+            .Where(o => o.OrderStatus == OrderStatus.Completed);
 
         if (request.DateFrom.HasValue)
         {

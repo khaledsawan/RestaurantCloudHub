@@ -18,6 +18,7 @@ public class GetPopularItemsQueryHandler : IRequestHandler<GetPopularItemsQuery,
     public async Task<List<PopularItemDto>> Handle(GetPopularItemsQuery request, CancellationToken cancellationToken)
     {
         var ordersQuery = _context.Orders
+            .IgnoreQueryFilters()
             .AsNoTracking()
             .Where(o => o.OrderStatus == OrderStatus.Completed);
 
@@ -34,6 +35,7 @@ public class GetPopularItemsQueryHandler : IRequestHandler<GetPopularItemsQuery,
         var orderIds = ordersQuery.Select(o => o.Id);
 
         return await _context.OrderItems
+            .IgnoreQueryFilters()
             .AsNoTracking()
             .Where(i => orderIds.Contains(i.OrderId))
             .GroupBy(i => new { i.ItemId, i.MenuItem.Name })

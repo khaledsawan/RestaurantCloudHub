@@ -16,10 +16,10 @@ public class GetCustomerAnalyticsQueryHandler : IRequestHandler<GetCustomerAnaly
 
     public async Task<AnalyticsDto> Handle(GetCustomerAnalyticsQuery request, CancellationToken cancellationToken)
     {
-        var totalCustomers = await _context.Customers.CountAsync(cancellationToken);
-        var activeCustomers = await _context.Customers.CountAsync(c => c.IsActive, cancellationToken);
-        var totalOrders = await _context.Orders.CountAsync(cancellationToken);
-        var totalSales = await _context.Orders.SumAsync(o => (decimal?)o.TotalAmount, cancellationToken) ?? 0m;
+        var totalCustomers = await _context.Customers.IgnoreQueryFilters().CountAsync(cancellationToken);
+        var activeCustomers = await _context.Customers.IgnoreQueryFilters().CountAsync(c => c.IsActive, cancellationToken);
+        var totalOrders = await _context.Orders.IgnoreQueryFilters().CountAsync(cancellationToken);
+        var totalSales = await _context.Orders.IgnoreQueryFilters().SumAsync(o => (decimal?)o.TotalAmount, cancellationToken) ?? 0m;
 
         return new AnalyticsDto
         {
