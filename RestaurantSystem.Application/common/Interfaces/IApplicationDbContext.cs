@@ -12,6 +12,9 @@ public interface IApplicationDbContext
     DbSet<OrderItem> OrderItems { get; }
     DbSet<OrderStatusHistory> OrderStatusHistories { get; }
     DbSet<OrderItemOption> OrderItemOptions { get; }
+    DbSet<Payment> Payments { get; }
+    DbSet<Reservation> Reservations { get; }
+    DbSet<RestaurantTable> RestaurantTables { get; }
     DbSet<Category> Categories { get; }
     DbSet<MenuItem> MenuItems { get; }
     DbSet<MenuItemOptionGroup> MenuItemOptionGroups { get; }

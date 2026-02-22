@@ -36,6 +36,9 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<OrderItem> OrderItems { get; set; } = null!;
     public DbSet<OrderStatusHistory> OrderStatusHistories { get; set; } = null!;
     public DbSet<OrderItemOption> OrderItemOptions { get; set; } = null!;
+    public DbSet<Payment> Payments { get; set; } = null!;
+    public DbSet<Reservation> Reservations { get; set; } = null!;
+    public DbSet<RestaurantTable> RestaurantTables { get; set; } = null!;
 
     // Menu
     public DbSet<Category> Categories { get; set; } = null!;
