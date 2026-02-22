@@ -16,7 +16,7 @@ public class GetInventoryReportQueryHandler : IRequestHandler<GetInventoryReport
 
     public async Task<List<InventoryTransactionDto>> Handle(GetInventoryReportQuery request, CancellationToken cancellationToken)
     {
-        var query = _context.InventoryTransactions.AsNoTracking().AsQueryable();
+        var query = _context.InventoryTransactions.IgnoreQueryFilters().AsNoTracking().AsQueryable();
 
         if (request.DateFrom.HasValue)
         {
