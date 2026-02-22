@@ -28,6 +28,27 @@ public class ConfirmReservationCommandHandler : IRequestHandler<ConfirmReservati
             return Result.Failure("Reservation not found");
         }
 
+        if (reservation.Status == ReservationStatus.Cancelled || reservation.Status == ReservationStatus.Completed)
+        {
+            return Result.Failure("Reservation cannot be confirmed in its current state");
+        }
+
+        if (reservation.TableId.HasValue)
+        {
+            var isBooked = await _context.Reservations
+                .AnyAsync(r => r.TableId == reservation.TableId
+                               && r.ReservationDate == reservation.ReservationDate
+                               && r.ReservationTime == reservation.ReservationTime
+                               && r.Id != reservation.Id
+                               && r.Status != ReservationStatus.Cancelled,
+                    cancellationToken);
+
+            if (isBooked)
+            {
+                return Result.Failure("Table is not available for that time");
+            }
+        }
+
         reservation.Status = ReservationStatus.Confirmed;
         reservation.StaffNotes = request.StaffNotes;
         reservation.ConfirmationCode ??= Guid.NewGuid().ToString("N")[..8].ToUpperInvariant();
