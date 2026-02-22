@@ -81,6 +81,8 @@ public class ReservationConfiguration : IEntityTypeConfiguration<Reservation>
             .HasForeignKey(r => r.CustomerId)
             .OnDelete(DeleteBehavior.Cascade);
 
+        builder.HasQueryFilter(r => r.Customer.DeletedAt == null);
+
         builder.HasOne(r => r.Table)
             .WithMany()
             .HasForeignKey(r => r.TableId)

@@ -15,6 +15,11 @@ public interface IApplicationDbContext
     DbSet<Payment> Payments { get; }
     DbSet<Reservation> Reservations { get; }
     DbSet<RestaurantTable> RestaurantTables { get; }
+    DbSet<InventoryCategory> InventoryCategories { get; }
+    DbSet<InventoryItem> InventoryItems { get; }
+    DbSet<InventoryTransaction> InventoryTransactions { get; }
+    DbSet<MenuItemIngredient> MenuItemIngredients { get; }
+    DbSet<Review> Reviews { get; }
     DbSet<Category> Categories { get; }
     DbSet<MenuItem> MenuItems { get; }
     DbSet<MenuItemOptionGroup> MenuItemOptionGroups { get; }

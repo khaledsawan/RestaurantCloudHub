@@ -39,6 +39,11 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<Payment> Payments { get; set; } = null!;
     public DbSet<Reservation> Reservations { get; set; } = null!;
     public DbSet<RestaurantTable> RestaurantTables { get; set; } = null!;
+    public DbSet<InventoryCategory> InventoryCategories { get; set; } = null!;
+    public DbSet<InventoryItem> InventoryItems { get; set; } = null!;
+    public DbSet<InventoryTransaction> InventoryTransactions { get; set; } = null!;
+    public DbSet<MenuItemIngredient> MenuItemIngredients { get; set; } = null!;
+    public DbSet<Review> Reviews { get; set; } = null!;
 
     // Menu
     public DbSet<Category> Categories { get; set; } = null!;
