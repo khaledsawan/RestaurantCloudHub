@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using RestaurantSystem.Domain.Entities;
+using RestaurantSystem.Domain.Entities.Identity;
 
 namespace RestaurantSystem.Application.Common.Interfaces;
 
@@ -24,6 +25,7 @@ public interface IApplicationDbContext
     DbSet<MenuItem> MenuItems { get; }
     DbSet<MenuItemOptionGroup> MenuItemOptionGroups { get; }
     DbSet<MenuItemOption> MenuItemOptions { get; }
+    DbSet<ApplicationUser> Users { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken);
 }
