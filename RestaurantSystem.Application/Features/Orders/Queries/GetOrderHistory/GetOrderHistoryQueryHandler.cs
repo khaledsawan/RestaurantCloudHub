@@ -16,7 +16,7 @@ public class GetOrderHistoryQueryHandler : IRequestHandler<GetOrderHistoryQuery,
 
     public async Task<List<OrderSummaryDto>> Handle(GetOrderHistoryQuery request, CancellationToken cancellationToken)
     {
-        var query = _context.Orders.AsNoTracking().AsQueryable();
+        var query = _context.Orders.IgnoreQueryFilters().AsNoTracking().AsQueryable();
 
         if (request.DateFrom.HasValue)
         {

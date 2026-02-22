@@ -19,6 +19,7 @@ public class GetOrderByIdQueryHandler : IRequestHandler<GetOrderByIdQuery, Order
     public async Task<OrderDetailDto?> Handle(GetOrderByIdQuery request, CancellationToken cancellationToken)
     {
         var order = await _context.Orders
+            .IgnoreQueryFilters()
             .AsNoTracking()
             .Include(o => o.OrderItems)
                 .ThenInclude(i => i.MenuItem)

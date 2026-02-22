@@ -115,7 +115,7 @@ public class CreateOrderCommandHandler : IRequestHandler<CreateOrderCommand, Res
             {
                 ItemId = menuItem.Id,
                 Quantity = item.Quantity,
-                UnitPrice = menuItem.Price,
+                UnitPrice = unitPrice,
                 Subtotal = lineSubtotal,
                 ItemNotes = item.ItemNotes,
                 ItemStatus = OrderItemStatus.Pending
