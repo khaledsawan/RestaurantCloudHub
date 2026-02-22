@@ -32,6 +32,11 @@ public class ProcessPaymentCommandHandler : IRequestHandler<ProcessPaymentComman
             return Result<PaymentResponseDto>.Failure("Invalid amount");
         }
 
+        if (request.Amount != order.TotalAmount)
+        {
+            return Result<PaymentResponseDto>.Failure("Payment amount must match order total");
+        }
+
         var payment = new Payment
         {
             OrderId = order.Id,
