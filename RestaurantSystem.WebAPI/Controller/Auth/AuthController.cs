@@ -16,6 +16,9 @@ using RestaurantSystem.Application.Features.Auth.Commands.SetUserActiveStatus;
 using RestaurantSystem.WebAPI.Models;
 using RestaurantSystem.Application.Features.Auth.Queries.GetCurrentUser;
 using RestaurantSystem.Application.Features.Auth.Queries.ValidateToken;
+using RestaurantSystem.WebAPI.Helpers;
+using RestaurantSystem.WebAPI.Models.Responses;
+using RestaurantSystem.Application.Common.Models;
 
 namespace RestaurantSystem.WebAPI.Controllers;
 
@@ -35,16 +38,16 @@ public class AuthController : ControllerBase
     /// </summary>
     [HttpPost("register")]
     [AllowAnonymous]
-    public async Task<IActionResult> Register([FromBody] RegisterCommand command)
+    public async Task<ActionResult<RegisterResponseDto>> Register([FromBody] RegisterCommand command)
     {
         var result = await _mediator.Send(command);
 
         if (!result.Succeeded)
         {
-            return BadRequest(new { errors = result.Errors });
+            return this.ToValidationProblem(result.Errors);
         }
 
-        return Ok(new { userId = result.Data, requiresEmailConfirmation = true });
+        return Ok(new RegisterResponseDto { UserId = result.Data, RequiresEmailConfirmation = true });
     }
 
     /// <summary>
@@ -52,13 +55,13 @@ public class AuthController : ControllerBase
     /// </summary>
     [HttpPost("login")]
     [AllowAnonymous]
-    public async Task<IActionResult> Login([FromBody] LoginCommand command)
+    public async Task<ActionResult<AuthResult>> Login([FromBody] LoginCommand command)
     {
         var result = await _mediator.Send(command);
 
-        if (!result.Succeeded)
+        if (!result.Succeeded || result.Data == null)
         {
-            return BadRequest(new { errors = result.Errors });
+            return this.ToValidationProblem(result.Errors);
         }
 
         return Ok(result.Data);
@@ -69,13 +72,13 @@ public class AuthController : ControllerBase
     /// </summary>
     [HttpPost("refresh")]
     [AllowAnonymous]
-    public async Task<IActionResult> Refresh([FromBody] RefreshTokenCommand command)
+    public async Task<ActionResult<AuthResult>> Refresh([FromBody] RefreshTokenCommand command)
     {
         var result = await _mediator.Send(command);
 
-        if (!result.Succeeded)
+        if (!result.Succeeded || result.Data == null)
         {
-            return BadRequest(new { errors = result.Errors });
+            return this.ToValidationProblem(result.Errors);
         }
 
         return Ok(result.Data);
@@ -86,16 +89,16 @@ public class AuthController : ControllerBase
     /// </summary>
     [HttpPost("confirm-email")]
     [AllowAnonymous]
-    public async Task<IActionResult> ConfirmEmail([FromBody] ConfirmEmailCommand command)
+    public async Task<ActionResult<MessageResponseDto>> ConfirmEmail([FromBody] ConfirmEmailCommand command)
     {
         var result = await _mediator.Send(command);
 
         if (!result.Succeeded)
         {
-            return BadRequest(new { errors = result.Errors });
+            return this.ToValidationProblem(result.Errors);
         }
 
-        return Ok(new { message = "Email confirmed successfully" });
+        return Ok(new MessageResponseDto { Message = "Email confirmed successfully" });
     }
 
     /// <summary>
@@ -103,16 +106,16 @@ public class AuthController : ControllerBase
     /// </summary>
     [HttpPost("resend-confirmation")]
     [AllowAnonymous]
-    public async Task<IActionResult> ResendConfirmation([FromBody] ResendConfirmationCommand command)
+    public async Task<ActionResult<MessageResponseDto>> ResendConfirmation([FromBody] ResendConfirmationCommand command)
     {
         var result = await _mediator.Send(command);
 
         if (!result.Succeeded)
         {
-            return BadRequest(new { errors = result.Errors });
+            return this.ToValidationProblem(result.Errors);
         }
 
-        return Ok(new { message = "Confirmation email sent" });
+        return Ok(new MessageResponseDto { Message = "Confirmation email sent" });
     }
 
     /// <summary>
@@ -120,16 +123,16 @@ public class AuthController : ControllerBase
     /// </summary>
     [HttpPost("change-password")]
     [Authorize]
-    public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordCommand command)
+    public async Task<ActionResult<MessageResponseDto>> ChangePassword([FromBody] ChangePasswordCommand command)
     {
         var result = await _mediator.Send(command);
 
         if (!result.Succeeded)
         {
-            return BadRequest(new { errors = result.Errors });
+            return this.ToValidationProblem(result.Errors);
         }
 
-        return Ok(new { message = "Password changed successfully" });
+        return Ok(new MessageResponseDto { Message = "Password changed successfully" });
     }
 
     /// <summary>
@@ -137,10 +140,10 @@ public class AuthController : ControllerBase
     /// </summary>
     [HttpPost("forgot-password")]
     [AllowAnonymous]
-    public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordCommand command)
+    public async Task<ActionResult<MessageResponseDto>> ForgotPassword([FromBody] ForgotPasswordCommand command)
     {
         await _mediator.Send(command);
-        return Ok(new { message = "If the email exists, a reset code has been sent." });
+        return Ok(new MessageResponseDto { Message = "If the email exists, a reset code has been sent." });
     }
 
     /// <summary>
@@ -148,16 +151,16 @@ public class AuthController : ControllerBase
     /// </summary>
     [HttpPost("reset-password")]
     [AllowAnonymous]
-    public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordCommand command)
+    public async Task<ActionResult<MessageResponseDto>> ResetPassword([FromBody] ResetPasswordCommand command)
     {
         var result = await _mediator.Send(command);
 
         if (!result.Succeeded)
         {
-            return BadRequest(new { errors = result.Errors });
+            return this.ToValidationProblem(result.Errors);
         }
 
-        return Ok(new { message = "Password reset successfully" });
+        return Ok(new MessageResponseDto { Message = "Password reset successfully" });
     }
 
     /// <summary>
@@ -165,15 +168,15 @@ public class AuthController : ControllerBase
     /// </summary>
     [HttpPost("change-email-request")]
     [Authorize]
-    public async Task<IActionResult> ChangeEmailRequest([FromBody] RequestEmailChangeCommand command)
+    public async Task<ActionResult<MessageResponseDto>> ChangeEmailRequest([FromBody] RequestEmailChangeCommand command)
     {
         var result = await _mediator.Send(command);
         if (!result.Succeeded)
         {
-            return BadRequest(new { errors = result.Errors });
+            return this.ToValidationProblem(result.Errors);
         }
 
-        return Ok(new { message = "Confirmation code sent" });
+        return Ok(new MessageResponseDto { Message = "Confirmation code sent" });
     }
 
     /// <summary>
@@ -181,15 +184,15 @@ public class AuthController : ControllerBase
     /// </summary>
     [HttpPost("change-email-confirm")]
     [Authorize]
-    public async Task<IActionResult> ChangeEmailConfirm([FromBody] ConfirmEmailChangeCommand command)
+    public async Task<ActionResult<MessageResponseDto>> ChangeEmailConfirm([FromBody] ConfirmEmailChangeCommand command)
     {
         var result = await _mediator.Send(command);
         if (!result.Succeeded)
         {
-            return BadRequest(new { errors = result.Errors });
+            return this.ToValidationProblem(result.Errors);
         }
 
-        return Ok(new { message = "Email updated successfully" });
+        return Ok(new MessageResponseDto { Message = "Email updated successfully" });
     }
 
     /// <summary>
@@ -197,15 +200,16 @@ public class AuthController : ControllerBase
     /// </summary>
     [HttpPost("delete-account")]
     [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<IActionResult> DeleteAccount()
     {
         var result = await _mediator.Send(new DeleteAccountCommand());
         if (!result.Succeeded)
         {
-            return BadRequest(new { errors = result.Errors });
+            return this.ToValidationProblem(result.Errors);
         }
 
-        return Ok(new { message = "Account deleted" });
+        return NoContent();
     }
 
     /// <summary>
@@ -213,16 +217,17 @@ public class AuthController : ControllerBase
     /// </summary>
     [HttpPatch("admin/users/{userId:int}/status")]
     [Authorize(Roles = "Admin")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<IActionResult> SetUserStatus(int userId, [FromBody] SetUserActiveStatusRequest request)
     {
         var command = new SetUserActiveStatusCommand(userId, request.IsActive);
         var result = await _mediator.Send(command);
         if (!result.Succeeded)
         {
-            return BadRequest(new { errors = result.Errors });
+            return this.ToValidationProblem(result.Errors);
         }
 
-        return Ok(new { message = "User status updated" });
+        return NoContent();
     }
 
     /// <summary>
@@ -230,7 +235,7 @@ public class AuthController : ControllerBase
     /// </summary>
     [HttpGet("me")]
     [Authorize]
-    public async Task<IActionResult> Me()
+    public async Task<ActionResult<CurrentUserDto>> Me()
     {
         var result = await _mediator.Send(new GetCurrentUserQuery());
         return Ok(result);
@@ -241,7 +246,7 @@ public class AuthController : ControllerBase
     /// </summary>
     [HttpPost("validate-token")]
     [AllowAnonymous]
-    public async Task<IActionResult> ValidateToken([FromBody] ValidateTokenQuery query)
+    public async Task<ActionResult<TokenValidationDto>> ValidateToken([FromBody] ValidateTokenQuery query)
     {
         var result = await _mediator.Send(query);
         return Ok(result);
@@ -251,15 +256,16 @@ public class AuthController : ControllerBase
     /// </summary>
     [HttpPost("logout")]
     [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<IActionResult> Logout([FromBody] LogoutCommand command)
     {
         var result = await _mediator.Send(command);
 
         if (!result.Succeeded)
         {
-            return BadRequest(new { errors = result.Errors });
+            return this.ToValidationProblem(result.Errors);
         }
 
-        return Ok();
+        return NoContent();
     }
 }

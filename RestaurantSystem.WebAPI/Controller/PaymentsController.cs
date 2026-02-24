@@ -4,6 +4,8 @@ using Microsoft.AspNetCore.Mvc;
 using RestaurantSystem.Application.Features.Payments.Commands.ProcessPayment;
 using RestaurantSystem.Application.Features.Payments.Commands.RefundPayment;
 using RestaurantSystem.Application.Features.Payments.Queries.GetPaymentHistory;
+using RestaurantSystem.Application.Features.Payments.DTOs;
+using RestaurantSystem.WebAPI.Helpers;
 
 namespace RestaurantSystem.WebAPI.Controllers;
 
@@ -20,12 +22,12 @@ public class PaymentsController : ControllerBase
     }
 
     [HttpPost("process")]
-    public async Task<IActionResult> ProcessPayment([FromBody] ProcessPaymentCommand command)
+    public async Task<ActionResult<PaymentResponseDto>> ProcessPayment([FromBody] ProcessPaymentCommand command)
     {
         var result = await _mediator.Send(command);
         if (!result.Succeeded || result.Data == null)
         {
-            return BadRequest(new { errors = result.Errors });
+            return this.ToValidationProblem(result.Errors);
         }
 
         return Ok(result.Data);
@@ -33,19 +35,20 @@ public class PaymentsController : ControllerBase
 
     [HttpPost("refund")]
     [Authorize(Roles = "Admin,Manager")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<IActionResult> RefundPayment([FromBody] RefundPaymentCommand command)
     {
         var result = await _mediator.Send(command);
         if (!result.Succeeded)
         {
-            return BadRequest(new { errors = result.Errors });
+            return this.ToValidationProblem(result.Errors);
         }
 
-        return Ok(new { message = "Payment refunded" });
+        return NoContent();
     }
 
     [HttpGet("history")]
-    public async Task<IActionResult> GetPaymentHistory([FromQuery] GetPaymentHistoryQuery query)
+    public async Task<ActionResult<List<PaymentDto>>> GetPaymentHistory([FromQuery] GetPaymentHistoryQuery query)
     {
         var result = await _mediator.Send(query);
         return Ok(result);

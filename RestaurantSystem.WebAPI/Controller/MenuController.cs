@@ -14,6 +14,9 @@ using RestaurantSystem.Application.Features.Menu.Queries.GetFeaturedItems;
 using RestaurantSystem.Application.Features.Menu.Queries.GetMenuItemById;
 using RestaurantSystem.Application.Features.Menu.Queries.GetMenuItems;
 using RestaurantSystem.WebAPI.Models;
+using RestaurantSystem.WebAPI.Helpers;
+using RestaurantSystem.WebAPI.Models.Responses;
+using RestaurantSystem.Application.Features.Menu.DTOs;
 
 namespace RestaurantSystem.WebAPI.Controllers;
 
@@ -30,7 +33,7 @@ public class MenuController : ControllerBase
 
     [HttpGet("items")]
     [AllowAnonymous]
-    public async Task<IActionResult> GetMenuItems([FromQuery] GetMenuItemsQuery query)
+    public async Task<ActionResult<List<MenuItemDto>>> GetMenuItems([FromQuery] GetMenuItemsQuery query)
     {
         var result = await _mediator.Send(query);
         return Ok(result);
@@ -38,12 +41,12 @@ public class MenuController : ControllerBase
 
     [HttpGet("items/{id:int}")]
     [AllowAnonymous]
-    public async Task<IActionResult> GetMenuItemById(int id)
+    public async Task<ActionResult<MenuItemDetailDto>> GetMenuItemById(int id)
     {
         var result = await _mediator.Send(new GetMenuItemByIdQuery(id));
         if (result == null)
         {
-            return NotFound();
+            return Problem(statusCode: StatusCodes.Status404NotFound, title: "Menu item not found");
         }
 
         return Ok(result);
@@ -51,7 +54,7 @@ public class MenuController : ControllerBase
 
     [HttpGet("categories")]
     [AllowAnonymous]
-    public async Task<IActionResult> GetCategories([FromQuery] GetCategoriesQuery query)
+    public async Task<ActionResult<List<CategoryDto>>> GetCategories([FromQuery] GetCategoriesQuery query)
     {
         var result = await _mediator.Send(query);
         return Ok(result);
@@ -59,7 +62,7 @@ public class MenuController : ControllerBase
 
     [HttpGet("featured")]
     [AllowAnonymous]
-    public async Task<IActionResult> GetFeaturedItems()
+    public async Task<ActionResult<List<MenuItemDto>>> GetFeaturedItems()
     {
         var result = await _mediator.Send(new GetFeaturedItemsQuery());
         return Ok(result);
@@ -67,26 +70,26 @@ public class MenuController : ControllerBase
 
     [HttpPost("categories")]
     [Authorize(Roles = "Admin,Manager")]
-    public async Task<IActionResult> CreateCategory([FromBody] CreateCategoryCommand command)
+    public async Task<ActionResult<MessageResponseDto>> CreateCategory([FromBody] CreateCategoryCommand command)
     {
         var result = await _mediator.Send(command);
         if (!result.Succeeded)
         {
-            return BadRequest(new { errors = result.Errors });
+            return this.ToValidationProblem(result.Errors);
         }
 
-        return Ok(new { message = "Category created" });
+        return Ok(new MessageResponseDto { Message = "Category created" });
     }
 
     [HttpPost("categories/{categoryId:int}/image")]
     [Authorize(Roles = "Admin,Manager")]
     [Consumes("multipart/form-data")]
     [RequestSizeLimit(5 * 1024 * 1024)]
-    public async Task<IActionResult> UploadCategoryImage(int categoryId, [FromForm] UploadCategoryImageRequest request)
+    public async Task<ActionResult<UploadImageResponseDto>> UploadCategoryImage(int categoryId, [FromForm] UploadCategoryImageRequest request)
     {
         if (request.File == null || request.File.Length == 0)
         {
-            return BadRequest(new { errors = new[] { "File is required" } });
+            return this.ToValidationProblem("File is required");
         }
 
         using var ms = new MemoryStream();
@@ -103,27 +106,28 @@ public class MenuController : ControllerBase
         var result = await _mediator.Send(command);
         if (!result.Succeeded || result.Data == null)
         {
-            return BadRequest(new { errors = result.Errors });
+            return this.ToValidationProblem(result.Errors);
         }
 
-        return Ok(new { imageUrl = result.Data });
+        return Ok(new UploadImageResponseDto { ImageUrl = result.Data });
     }
 
     [HttpPost("items")]
     [Authorize(Roles = "Admin,Manager")]
-    public async Task<IActionResult> CreateMenuItem([FromBody] CreateMenuItemCommand command)
+    public async Task<ActionResult<MessageResponseDto>> CreateMenuItem([FromBody] CreateMenuItemCommand command)
     {
         var result = await _mediator.Send(command);
         if (!result.Succeeded)
         {
-            return BadRequest(new { errors = result.Errors });
+            return this.ToValidationProblem(result.Errors);
         }
 
-        return Ok(new { message = "Menu item created" });
+        return Ok(new MessageResponseDto { Message = "Menu item created" });
     }
 
     [HttpPut("items/{id:int}")]
     [Authorize(Roles = "Admin,Manager")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<IActionResult> UpdateMenuItem(int id, [FromBody] UpdateMenuItemRequest request)
     {
         var command = new UpdateMenuItemCommand
@@ -152,62 +156,63 @@ public class MenuController : ControllerBase
         var result = await _mediator.Send(command);
         if (!result.Succeeded)
         {
-            return BadRequest(new { errors = result.Errors });
+            return this.ToValidationProblem(result.Errors);
         }
 
-        return Ok(new { message = "Menu item updated" });
+        return NoContent();
     }
 
     [HttpDelete("items/{id:int}")]
     [Authorize(Roles = "Admin,Manager")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<IActionResult> DeleteMenuItem(int id)
     {
         var result = await _mediator.Send(new DeleteMenuItemCommand(id));
         if (!result.Succeeded)
         {
-            return BadRequest(new { errors = result.Errors });
+            return this.ToValidationProblem(result.Errors);
         }
 
-        return Ok(new { message = "Menu item deleted" });
+        return NoContent();
     }
 
     [HttpPost("items/{itemId:int}/option-groups")]
     [Authorize(Roles = "Admin,Manager")]
-    public async Task<IActionResult> CreateOptionGroup(int itemId, [FromBody] CreateOptionGroupCommand command)
+    public async Task<ActionResult<MessageResponseDto>> CreateOptionGroup(int itemId, [FromBody] CreateOptionGroupCommand command)
     {
         var updated = command with { ItemId = itemId };
         var result = await _mediator.Send(updated);
         if (!result.Succeeded)
         {
-            return BadRequest(new { errors = result.Errors });
+            return this.ToValidationProblem(result.Errors);
         }
 
-        return Ok(new { message = "Option group created" });
+        return Ok(new MessageResponseDto { Message = "Option group created" });
     }
 
     [HttpPost("option-groups/{groupId:int}/options")]
     [Authorize(Roles = "Admin,Manager")]
-    public async Task<IActionResult> AddOption(int groupId, [FromBody] AddOptionCommand command)
+    public async Task<ActionResult<MessageResponseDto>> AddOption(int groupId, [FromBody] AddOptionCommand command)
     {
         var updated = command with { OptionGroupId = groupId };
         var result = await _mediator.Send(updated);
         if (!result.Succeeded)
         {
-            return BadRequest(new { errors = result.Errors });
+            return this.ToValidationProblem(result.Errors);
         }
 
-        return Ok(new { message = "Option added" });
+        return Ok(new MessageResponseDto { Message = "Option added" });
     }
 
     [HttpPost("items/{itemId:int}/image")]
     [Authorize(Roles = "Admin,Manager")]
     [Consumes("multipart/form-data")]
     [RequestSizeLimit(5 * 1024 * 1024)]
-    public async Task<IActionResult> UploadMenuItemImage(int itemId, [FromForm] UploadMenuItemImageRequest request)
+    public async Task<ActionResult<UploadImageResponseDto>> UploadMenuItemImage(int itemId, [FromForm] UploadMenuItemImageRequest request)
     {
         if (request.File == null || request.File.Length == 0)
         {
-            return BadRequest(new { errors = new[] { "File is required" } });
+            return this.ToValidationProblem("File is required");
         }
 
         using var ms = new MemoryStream();
@@ -224,9 +229,9 @@ public class MenuController : ControllerBase
         var result = await _mediator.Send(command);
         if (!result.Succeeded || result.Data == null)
         {
-            return BadRequest(new { errors = result.Errors });
+            return this.ToValidationProblem(result.Errors);
         }
 
-        return Ok(new { imageUrl = result.Data });
+        return Ok(new UploadImageResponseDto { ImageUrl = result.Data });
     }
 }

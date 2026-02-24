@@ -7,6 +7,8 @@ using RestaurantSystem.Application.Features.Reservations.Commands.CreateReservat
 using RestaurantSystem.Application.Features.Reservations.Queries.GetAvailableTables;
 using RestaurantSystem.Application.Features.Reservations.Queries.GetMyReservations;
 using RestaurantSystem.Application.Features.Reservations.Queries.GetTodaysReservations;
+using RestaurantSystem.Application.Features.Reservations.DTOs;
+using RestaurantSystem.WebAPI.Helpers;
 
 namespace RestaurantSystem.WebAPI.Controllers;
 
@@ -23,12 +25,12 @@ public class ReservationsController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<IActionResult> CreateReservation([FromBody] CreateReservationCommand command)
+    public async Task<ActionResult<ReservationDto>> CreateReservation([FromBody] CreateReservationCommand command)
     {
         var result = await _mediator.Send(command);
         if (!result.Succeeded || result.Data == null)
         {
-            return BadRequest(new { errors = result.Errors });
+            return this.ToValidationProblem(result.Errors);
         }
 
         return Ok(result.Data);
@@ -36,33 +38,35 @@ public class ReservationsController : ControllerBase
 
     [HttpPost("{id:int}/confirm")]
     [Authorize(Roles = "Admin,Manager")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<IActionResult> ConfirmReservation(int id, [FromBody] ConfirmReservationCommand command)
     {
         var updated = command with { ReservationId = id };
         var result = await _mediator.Send(updated);
         if (!result.Succeeded)
         {
-            return BadRequest(new { errors = result.Errors });
+            return this.ToValidationProblem(result.Errors);
         }
 
-        return Ok(new { message = "Reservation confirmed" });
+        return NoContent();
     }
 
     [HttpPost("{id:int}/cancel")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<IActionResult> CancelReservation(int id, [FromBody] CancelReservationCommand command)
     {
         var updated = command with { ReservationId = id };
         var result = await _mediator.Send(updated);
         if (!result.Succeeded)
         {
-            return BadRequest(new { errors = result.Errors });
+            return this.ToValidationProblem(result.Errors);
         }
 
-        return Ok(new { message = "Reservation cancelled" });
+        return NoContent();
     }
 
     [HttpGet("my")]
-    public async Task<IActionResult> GetMyReservations()
+    public async Task<ActionResult<List<ReservationDto>>> GetMyReservations()
     {
         var result = await _mediator.Send(new GetMyReservationsQuery());
         return Ok(result);
@@ -70,14 +74,14 @@ public class ReservationsController : ControllerBase
 
     [HttpGet("today")]
     [Authorize(Roles = "Admin,Manager")]
-    public async Task<IActionResult> GetTodaysReservations()
+    public async Task<ActionResult<List<ReservationDto>>> GetTodaysReservations()
     {
         var result = await _mediator.Send(new GetTodaysReservationsQuery());
         return Ok(result);
     }
 
     [HttpGet("available-tables")]
-    public async Task<IActionResult> GetAvailableTables([FromQuery] GetAvailableTablesQuery query)
+    public async Task<ActionResult<List<TableAvailabilityDto>>> GetAvailableTables([FromQuery] GetAvailableTablesQuery query)
     {
         var result = await _mediator.Send(query);
         return Ok(result);

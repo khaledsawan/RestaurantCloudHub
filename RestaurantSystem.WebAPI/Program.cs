@@ -3,12 +3,13 @@ using System.Text;
 using FluentValidation;
 using MediatR;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.IdentityModel.Tokens;
-using Microsoft.OpenApi;
 using RestaurantSystem.Application.Common.Behaviors;
 using RestaurantSystem.Application.Common.Interfaces;
 using RestaurantSystem.Application.Features.Auth.Commands.Register;
@@ -18,6 +19,8 @@ using RestaurantSystem.Infrastructure.Persistence;
 using RestaurantSystem.Infrastructure.Persistence.Interceptors;
 using RestaurantSystem.Infrastructure.Services;
 using RestaurantSystem.WebAPI.Services;
+using RestaurantSystem.WebAPI.Conventions;
+using Microsoft.OpenApi;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -106,12 +109,28 @@ builder.Services.AddVersionedApiExplorer(options =>
 });
 
 // CONTROLLERS (API)
-builder.Services.AddControllers()
+builder.Services.AddControllers(options =>
+    {
+        options.Conventions.Add(new SuccessResponseTypeConvention());
+        options.Filters.Add(new ProducesResponseTypeAttribute(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest));
+        options.Filters.Add(new ProducesResponseTypeAttribute(typeof(ProblemDetails), StatusCodes.Status401Unauthorized));
+        options.Filters.Add(new ProducesResponseTypeAttribute(typeof(ProblemDetails), StatusCodes.Status403Forbidden));
+        options.Filters.Add(new ProducesResponseTypeAttribute(typeof(ProblemDetails), StatusCodes.Status404NotFound));
+        options.Filters.Add(new ProducesResponseTypeAttribute(typeof(ProblemDetails), StatusCodes.Status500InternalServerError));
+    })
     .AddJsonOptions(options =>
     {
         options.JsonSerializerOptions.Converters.Add(
             new System.Text.Json.Serialization.JsonStringEnumConverter(System.Text.Json.JsonNamingPolicy.CamelCase));
     });
+
+builder.Services.AddProblemDetails(options =>
+{
+    options.CustomizeProblemDetails = context =>
+    {
+        context.ProblemDetails.Extensions["traceId"] = context.HttpContext.TraceIdentifier;
+    };
+});
 
 // HTTP CONTEXT ACCESSOR (for CurrentUserService)
 builder.Services.AddHttpContextAccessor();
@@ -193,6 +212,7 @@ builder.Services.AddSwaggerGen(options =>
     {
         [new OpenApiSecuritySchemeReference(securitySchemeName, document)] = new List<string>()
     });
+
 });
 
 // HEALTHCHECKS
@@ -223,7 +243,27 @@ if (app.Environment.IsDevelopment())
 
 if (!app.Environment.IsDevelopment())
 {
-    app.UseExceptionHandler("/Error");
+    app.UseExceptionHandler(errorApp =>
+    {
+        errorApp.Run(async context =>
+        {
+            var problemDetailsService = context.RequestServices.GetRequiredService<IProblemDetailsService>();
+            var exceptionHandlerFeature = context.Features.Get<IExceptionHandlerFeature>();
+            if (exceptionHandlerFeature?.Error != null)
+            {
+                context.Response.StatusCode = StatusCodes.Status500InternalServerError;
+                await problemDetailsService.WriteAsync(new ProblemDetailsContext
+                {
+                    HttpContext = context,
+                    ProblemDetails = new ProblemDetails
+                    {
+                        Status = StatusCodes.Status500InternalServerError,
+                        Title = "An unexpected error occurred."
+                    }
+                });
+            }
+        });
+    });
     app.UseHsts();
 }
 
@@ -232,6 +272,25 @@ app.UseStaticFiles();
 app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseStatusCodePages(async context =>
+{
+    var httpContext = context.HttpContext;
+    if (httpContext.Response.HasStarted)
+    {
+        return;
+    }
+
+    var problemDetailsService = httpContext.RequestServices.GetRequiredService<IProblemDetailsService>();
+    await problemDetailsService.WriteAsync(new ProblemDetailsContext
+    {
+        HttpContext = httpContext,
+        ProblemDetails = new ProblemDetails
+        {
+            Status = httpContext.Response.StatusCode,
+            Title = ReasonPhrases.GetReasonPhrase(httpContext.Response.StatusCode)
+        }
+    });
+});
 app.MapControllers();
 
 app.Run();

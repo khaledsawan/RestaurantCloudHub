@@ -11,6 +11,8 @@ using RestaurantSystem.Application.Features.Orders.Queries.GetMyOrders;
 using RestaurantSystem.Application.Features.Orders.Queries.GetOrderById;
 using RestaurantSystem.Application.Features.Orders.Queries.GetOrderHistory;
 using RestaurantSystem.WebAPI.Models;
+using RestaurantSystem.WebAPI.Helpers;
+using RestaurantSystem.Application.Features.Orders.DTOs;
 
 namespace RestaurantSystem.WebAPI.Controllers;
 
@@ -27,31 +29,31 @@ public class OrdersController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<IActionResult> CreateOrder([FromBody] CreateOrderCommand command)
+    public async Task<ActionResult<OrderDto>> CreateOrder([FromBody] CreateOrderCommand command)
     {
         var result = await _mediator.Send(command);
         if (!result.Succeeded || result.Data == null)
         {
-            return BadRequest(new { errors = result.Errors });
+            return this.ToValidationProblem(result.Errors);
         }
 
         return Ok(result.Data);
     }
 
     [HttpGet("{id:int}")]
-    public async Task<IActionResult> GetOrderById(int id)
+    public async Task<ActionResult<OrderDetailDto>> GetOrderById(int id)
     {
         var result = await _mediator.Send(new GetOrderByIdQuery(id));
         if (result == null)
         {
-            return NotFound();
+            return Problem(statusCode: StatusCodes.Status404NotFound, title: "Order not found");
         }
 
         return Ok(result);
     }
 
     [HttpGet("my")]
-    public async Task<IActionResult> GetMyOrders()
+    public async Task<ActionResult<List<OrderSummaryDto>>> GetMyOrders()
     {
         var result = await _mediator.Send(new GetMyOrdersQuery());
         return Ok(result);
@@ -59,7 +61,7 @@ public class OrdersController : ControllerBase
 
     [HttpGet("active")]
     [Authorize(Roles = "Admin,Manager")]
-    public async Task<IActionResult> GetActiveOrders()
+    public async Task<ActionResult<List<OrderSummaryDto>>> GetActiveOrders()
     {
         var result = await _mediator.Send(new GetActiveOrdersQuery());
         return Ok(result);
@@ -67,7 +69,7 @@ public class OrdersController : ControllerBase
 
     [HttpGet("history")]
     [Authorize(Roles = "Admin,Manager")]
-    public async Task<IActionResult> GetOrderHistory([FromQuery] GetOrderHistoryQuery query)
+    public async Task<ActionResult<List<OrderSummaryDto>>> GetOrderHistory([FromQuery] GetOrderHistoryQuery query)
     {
         var result = await _mediator.Send(query);
         return Ok(result);
@@ -75,6 +77,7 @@ public class OrdersController : ControllerBase
 
     [HttpPut("{id:int}/status")]
     [Authorize(Roles = "Admin,Manager")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<IActionResult> UpdateOrderStatus(int id, [FromBody] UpdateOrderStatusRequest request)
     {
         var command = new UpdateOrderStatusCommand
@@ -87,13 +90,14 @@ public class OrdersController : ControllerBase
         var result = await _mediator.Send(command);
         if (!result.Succeeded)
         {
-            return BadRequest(new { errors = result.Errors });
+            return this.ToValidationProblem(result.Errors);
         }
 
-        return Ok(new { message = "Order status updated" });
+        return NoContent();
     }
 
     [HttpPost("{id:int}/cancel")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<IActionResult> CancelOrder(int id, [FromBody] CancelOrderRequest request)
     {
         var command = new CancelOrderCommand
@@ -105,14 +109,15 @@ public class OrdersController : ControllerBase
         var result = await _mediator.Send(command);
         if (!result.Succeeded)
         {
-            return BadRequest(new { errors = result.Errors });
+            return this.ToValidationProblem(result.Errors);
         }
 
-        return Ok(new { message = "Order cancelled" });
+        return NoContent();
     }
 
     [HttpPost("{id:int}/notes")]
     [Authorize(Roles = "Admin,Manager")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<IActionResult> AddOrderNote(int id, [FromBody] AddOrderNoteRequest request)
     {
         var command = new AddOrderNoteCommand
@@ -125,14 +130,15 @@ public class OrdersController : ControllerBase
         var result = await _mediator.Send(command);
         if (!result.Succeeded)
         {
-            return BadRequest(new { errors = result.Errors });
+            return this.ToValidationProblem(result.Errors);
         }
 
-        return Ok(new { message = "Order note added" });
+        return NoContent();
     }
 
     [HttpPost("{id:int}/assign-driver")]
     [Authorize(Roles = "Admin,Manager")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<IActionResult> AssignDriver(int id, [FromBody] AssignDriverRequest request)
     {
         var command = new AssignDriverCommand
@@ -144,9 +150,9 @@ public class OrdersController : ControllerBase
         var result = await _mediator.Send(command);
         if (!result.Succeeded)
         {
-            return BadRequest(new { errors = result.Errors });
+            return this.ToValidationProblem(result.Errors);
         }
 
-        return Ok(new { message = "Driver assigned" });
+        return NoContent();
     }
 }

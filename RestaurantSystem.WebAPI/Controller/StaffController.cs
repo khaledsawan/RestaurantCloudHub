@@ -3,6 +3,8 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using RestaurantSystem.Application.Features.Staff.Commands.CreateStaffProfile;
 using RestaurantSystem.WebAPI.Models;
+using RestaurantSystem.WebAPI.Helpers;
+using RestaurantSystem.WebAPI.Models.Responses;
 
 namespace RestaurantSystem.WebAPI.Controllers;
 
@@ -19,7 +21,7 @@ public class StaffController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<IActionResult> CreateStaff([FromBody] CreateStaffProfileRequest request)
+    public async Task<ActionResult<MessageResponseDto>> CreateStaff([FromBody] CreateStaffProfileRequest request)
     {
         var command = new CreateStaffProfileCommand
         {
@@ -31,9 +33,9 @@ public class StaffController : ControllerBase
         var result = await _mediator.Send(command);
         if (!result.Succeeded)
         {
-            return BadRequest(new { errors = result.Errors });
+            return this.ToValidationProblem(result.Errors);
         }
 
-        return Ok(new { message = "Staff profile created" });
+        return Ok(new MessageResponseDto { Message = "Staff profile created" });
     }
 }

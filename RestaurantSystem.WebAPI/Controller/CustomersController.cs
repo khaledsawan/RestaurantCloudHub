@@ -11,6 +11,9 @@ using RestaurantSystem.Application.Features.Customers.Queries.GetCustomerAddress
 using RestaurantSystem.Application.Features.Customers.Queries.GetCustomerProfile;
 using RestaurantSystem.Application.Features.Customers.Queries.GetLoyaltyPoints;
 using RestaurantSystem.WebAPI.Models;
+using RestaurantSystem.WebAPI.Helpers;
+using RestaurantSystem.WebAPI.Models.Responses;
+using RestaurantSystem.Application.Features.Customers.DTOs;
 
 namespace RestaurantSystem.WebAPI.Controllers;
 
@@ -27,37 +30,38 @@ public class CustomersController : ControllerBase
     }
 
     [HttpPost("profile")]
-    public async Task<IActionResult> CreateProfile([FromBody] CreateCustomerProfileCommand command)
+    public async Task<ActionResult<MessageResponseDto>> CreateProfile([FromBody] CreateCustomerProfileCommand command)
     {
         var result = await _mediator.Send(command);
         if (!result.Succeeded)
         {
-            return BadRequest(new { errors = result.Errors });
+            return this.ToValidationProblem(result.Errors);
         }
 
-        return Ok(new { message = "Customer profile created" });
+        return Ok(new MessageResponseDto { Message = "Customer profile created" });
     }
 
     [HttpPut("profile")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<IActionResult> UpdateProfile([FromBody] UpdateCustomerProfileCommand command)
     {
         var result = await _mediator.Send(command);
         if (!result.Succeeded)
         {
-            return BadRequest(new { errors = result.Errors });
+            return this.ToValidationProblem(result.Errors);
         }
 
-        return Ok(new { message = "Customer profile updated" });
+        return NoContent();
     }
 
     [HttpPost("profile/image")]
     [Consumes("multipart/form-data")]
     [RequestSizeLimit(5 * 1024 * 1024)]
-    public async Task<IActionResult> UploadProfileImage([FromForm] UploadProfileImageRequest request)
+    public async Task<ActionResult<UploadImageResponseDto>> UploadProfileImage([FromForm] UploadProfileImageRequest request)
     {
         if (request.File == null || request.File.Length == 0)
         {
-            return BadRequest(new { errors = new[] { "File is required" } });
+            return this.ToValidationProblem("File is required");
         }
 
         using var ms = new MemoryStream();
@@ -73,37 +77,38 @@ public class CustomersController : ControllerBase
         var result = await _mediator.Send(command);
         if (!result.Succeeded || result.Data == null)
         {
-            return BadRequest(new { errors = result.Errors });
+            return this.ToValidationProblem(result.Errors);
         }
 
-        return Ok(new { profileImageUrl = result.Data });
+        return Ok(new UploadImageResponseDto { ImageUrl = result.Data });
     }
 
     [HttpGet("profile")]
-    public async Task<IActionResult> GetProfile()
+    public async Task<ActionResult<CustomerProfileDto>> GetProfile()
     {
         var result = await _mediator.Send(new GetCustomerProfileQuery());
         if (result == null)
         {
-            return NotFound();
+            return Problem(statusCode: StatusCodes.Status404NotFound, title: "Customer profile not found");
         }
 
         return Ok(result);
     }
 
     [HttpPost("addresses")]
-    public async Task<IActionResult> AddAddress([FromBody] AddAddressCommand command)
+    public async Task<ActionResult<MessageResponseDto>> AddAddress([FromBody] AddAddressCommand command)
     {
         var result = await _mediator.Send(command);
         if (!result.Succeeded)
         {
-            return BadRequest(new { errors = result.Errors });
+            return this.ToValidationProblem(result.Errors);
         }
 
-        return Ok(new { message = "Address added" });
+        return Ok(new MessageResponseDto { Message = "Address added" });
     }
 
     [HttpPut("addresses/{addressId:int}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<IActionResult> UpdateAddress(int addressId, [FromBody] UpdateAddressRequest request)
     {
         var command = new UpdateAddressCommand
@@ -125,38 +130,39 @@ public class CustomersController : ControllerBase
         var result = await _mediator.Send(command);
         if (!result.Succeeded)
         {
-            return BadRequest(new { errors = result.Errors });
+            return this.ToValidationProblem(result.Errors);
         }
 
-        return Ok(new { message = "Address updated" });
+        return NoContent();
     }
 
     [HttpDelete("addresses/{addressId:int}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<IActionResult> DeleteAddress(int addressId)
     {
         var result = await _mediator.Send(new DeleteAddressCommand(addressId));
         if (!result.Succeeded)
         {
-            return BadRequest(new { errors = result.Errors });
+            return this.ToValidationProblem(result.Errors);
         }
 
-        return Ok(new { message = "Address deleted" });
+        return NoContent();
     }
 
     [HttpGet("addresses")]
-    public async Task<IActionResult> GetAddresses()
+    public async Task<ActionResult<List<CustomerAddressDto>>> GetAddresses()
     {
         var result = await _mediator.Send(new GetCustomerAddressesQuery());
         return Ok(result);
     }
 
     [HttpGet("loyalty")]
-    public async Task<IActionResult> GetLoyaltyPoints()
+    public async Task<ActionResult<LoyaltyPointsDto>> GetLoyaltyPoints()
     {
         var result = await _mediator.Send(new GetLoyaltyPointsQuery());
         if (result == null)
         {
-            return NotFound();
+            return Problem(statusCode: StatusCodes.Status404NotFound, title: "Loyalty points not found");
         }
 
         return Ok(result);

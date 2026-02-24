@@ -1,5 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
+using RestaurantSystem.WebAPI.Models.Responses;
+using System.Linq;
 
 namespace RestaurantSystem.Controllers;
 
@@ -19,56 +21,56 @@ public class HealthController : ControllerBase
     /// Check if the application is alive
     /// </summary>
     [HttpGet("live")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status503ServiceUnavailable)]
-    public async Task<IActionResult> Live()
+    [ProducesResponseType(typeof(HealthStatusResponseDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(HealthStatusResponseDto), StatusCodes.Status503ServiceUnavailable)]
+    public async Task<ActionResult<HealthStatusResponseDto>> Live()
     {
         var result = await _healthCheckService.CheckHealthAsync(
             check => check.Tags.Contains("live"));
 
         return result.Status == HealthStatus.Healthy
-            ? Ok(new { status = "Healthy", checks = result.Entries })
-            : StatusCode(503, new { status = result.Status.ToString(), checks = result.Entries });
+            ? Ok(new HealthStatusResponseDto { Status = "Healthy", Checks = result.Entries.ToDictionary(k => k.Key, v => v.Value) })
+            : StatusCode(503, new HealthStatusResponseDto { Status = result.Status.ToString(), Checks = result.Entries.ToDictionary(k => k.Key, v => v.Value) });
     }
 
     /// <summary>
     /// Check if the application is ready (including database)
     /// </summary>
     [HttpGet("ready")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status503ServiceUnavailable)]
-    public async Task<IActionResult> Ready()
+    [ProducesResponseType(typeof(HealthStatusResponseDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(HealthStatusResponseDto), StatusCodes.Status503ServiceUnavailable)]
+    public async Task<ActionResult<HealthStatusResponseDto>> Ready()
     {
         var result = await _healthCheckService.CheckHealthAsync(
             check => check.Tags.Contains("ready"));
 
         return result.Status == HealthStatus.Healthy
-            ? Ok(new { status = "Healthy", checks = result.Entries })
-            : StatusCode(503, new { status = result.Status.ToString(), checks = result.Entries });
+            ? Ok(new HealthStatusResponseDto { Status = "Healthy", Checks = result.Entries.ToDictionary(k => k.Key, v => v.Value) })
+            : StatusCode(503, new HealthStatusResponseDto { Status = result.Status.ToString(), Checks = result.Entries.ToDictionary(k => k.Key, v => v.Value) });
     }
 
     /// <summary>
     /// Check overall application health
     /// </summary>
     [HttpGet]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status503ServiceUnavailable)]
-    public async Task<IActionResult> GetHealth()
+    [ProducesResponseType(typeof(HealthStatusWithDurationResponseDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(HealthStatusWithDurationResponseDto), StatusCodes.Status503ServiceUnavailable)]
+    public async Task<ActionResult<HealthStatusWithDurationResponseDto>> GetHealth()
     {
         var result = await _healthCheckService.CheckHealthAsync();
 
         return result.Status == HealthStatus.Healthy
-            ? Ok(new
+            ? Ok(new HealthStatusWithDurationResponseDto
             {
-                status = "Healthy",
-                checks = result.Entries,
-                totalDuration = result.TotalDuration
+                Status = "Healthy",
+                Checks = result.Entries.ToDictionary(k => k.Key, v => v.Value),
+                TotalDuration = result.TotalDuration
             })
-            : StatusCode(503, new
+            : StatusCode(503, new HealthStatusWithDurationResponseDto
             {
-                status = result.Status.ToString(),
-                checks = result.Entries,
-                totalDuration = result.TotalDuration
+                Status = result.Status.ToString(),
+                Checks = result.Entries.ToDictionary(k => k.Key, v => v.Value),
+                TotalDuration = result.TotalDuration
             });
     }
 }

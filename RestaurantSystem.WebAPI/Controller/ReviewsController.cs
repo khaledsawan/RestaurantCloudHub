@@ -4,6 +4,9 @@ using Microsoft.AspNetCore.Mvc;
 using RestaurantSystem.Application.Features.Reviews.Commands.CreateReview;
 using RestaurantSystem.Application.Features.Reviews.Commands.RespondToReview;
 using RestaurantSystem.Application.Features.Reviews.Queries.GetMenuItemReviews;
+using RestaurantSystem.Application.Features.Reviews.DTOs;
+using RestaurantSystem.WebAPI.Helpers;
+using RestaurantSystem.WebAPI.Models.Responses;
 
 namespace RestaurantSystem.WebAPI.Controllers;
 
@@ -20,34 +23,35 @@ public class ReviewsController : ControllerBase
 
     [HttpPost]
     [Authorize]
-    public async Task<IActionResult> CreateReview([FromBody] CreateReviewCommand command)
+    public async Task<ActionResult<MessageResponseDto>> CreateReview([FromBody] CreateReviewCommand command)
     {
         var result = await _mediator.Send(command);
         if (!result.Succeeded)
         {
-            return BadRequest(new { errors = result.Errors });
+            return this.ToValidationProblem(result.Errors);
         }
 
-        return Ok(new { message = "Review submitted" });
+        return Ok(new MessageResponseDto { Message = "Review submitted" });
     }
 
     [HttpPost("{id:int}/respond")]
     [Authorize(Roles = "Admin,Manager")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<IActionResult> RespondToReview(int id, [FromBody] RespondToReviewCommand command)
     {
         var updated = command with { ReviewId = id };
         var result = await _mediator.Send(updated);
         if (!result.Succeeded)
         {
-            return BadRequest(new { errors = result.Errors });
+            return this.ToValidationProblem(result.Errors);
         }
 
-        return Ok(new { message = "Response added" });
+        return NoContent();
     }
 
     [HttpGet("menu-items/{menuItemId:int}")]
     [AllowAnonymous]
-    public async Task<IActionResult> GetMenuItemReviews(int menuItemId)
+    public async Task<ActionResult<List<ReviewDto>>> GetMenuItemReviews(int menuItemId)
     {
         var result = await _mediator.Send(new GetMenuItemReviewsQuery(menuItemId));
         return Ok(result);
