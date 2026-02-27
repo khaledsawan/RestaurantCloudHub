@@ -54,7 +54,7 @@ public class AdminUsersController : ControllerBase
             Password = request.Password,
             FirstName = request.FirstName,
             LastName = request.LastName,
-            Role = request.Role
+            Role = request.Role.ToString()
         };
 
         var result = await _mediator.Send(command);
@@ -73,7 +73,7 @@ public class AdminUsersController : ControllerBase
         var result = await _mediator.Send(new UpdateAdminUserRoleCommand
         {
             UserId = id,
-            Role = request.Role
+            Role = request.Role.ToString()
         });
 
         if (!result.Succeeded)
