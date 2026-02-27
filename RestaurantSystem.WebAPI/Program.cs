@@ -23,6 +23,17 @@ using RestaurantSystem.WebAPI.Conventions;
 using Microsoft.OpenApi;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowFrontend",
+        policy =>
+        {
+            policy.WithOrigins("http://localhost:4200")
+                  .AllowAnyHeader()
+                  .AllowAnyMethod()
+                  .AllowCredentials();
+        });
+});
 
 builder.Configuration.Sources.Clear();
 builder.Configuration.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
@@ -155,6 +166,8 @@ builder.Services.AddScoped<ApplicationDbContextInitializer>();
 builder.Services.AddSingleton<IBackgroundTaskQueue, BackgroundTaskQueue>();
 builder.Services.AddHostedService<QueuedHostedService>();
 builder.Services.AddScoped<IFileStorage, LocalFileStorage>();
+builder.Services.AddMemoryCache();
+builder.Services.AddScoped<ICacheService, MemoryCacheService>();
 
 // JWT AUTH
 var jwtSecret = builder.Configuration["JwtSettings:SecretKey"]
@@ -270,6 +283,7 @@ if (!app.Environment.IsDevelopment())
 app.UseForwardedHeaders();
 app.UseStaticFiles();
 app.UseHttpsRedirection();
+app.UseCors("AllowFrontend");
 app.UseAuthentication();
 app.UseAuthorization();
 app.UseStatusCodePages(async context =>

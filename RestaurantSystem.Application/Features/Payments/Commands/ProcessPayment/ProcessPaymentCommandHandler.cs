@@ -1,8 +1,10 @@
+using System.Text.Json;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using RestaurantSystem.Application.Common.Interfaces;
 using RestaurantSystem.Application.Common.Models;
 using RestaurantSystem.Application.Features.Payments.DTOs;
+using RestaurantSystem.Application.Features.RestaurantSettings.DTOs;
 using RestaurantSystem.Domain.Entities;
 using RestaurantSystem.Domain.Enums;
 
@@ -11,6 +13,7 @@ namespace RestaurantSystem.Application.Features.Payments.Commands.ProcessPayment
 public class ProcessPaymentCommandHandler : IRequestHandler<ProcessPaymentCommand, Result<PaymentResponseDto>>
 {
     private readonly IApplicationDbContext _context;
+    private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
 
     public ProcessPaymentCommandHandler(IApplicationDbContext context)
     {
@@ -35,6 +38,21 @@ public class ProcessPaymentCommandHandler : IRequestHandler<ProcessPaymentComman
         if (request.Amount != order.TotalAmount)
         {
             return Result<PaymentResponseDto>.Failure("Payment amount must match order total");
+        }
+
+        var paymentSetting = await _context.RestaurantSettings
+            .AsNoTracking()
+            .FirstOrDefaultAsync(s => s.Key == "PaymentMethods", cancellationToken);
+
+        if (paymentSetting != null)
+        {
+            var methods = TryDeserialize<PaymentMethodsDto>(paymentSetting.Value);
+            if (methods?.EnabledMethods != null &&
+                methods.EnabledMethods.Count > 0 &&
+                !methods.EnabledMethods.Contains(request.PaymentMethod))
+            {
+                return Result<PaymentResponseDto>.Failure("Payment method is not enabled");
+            }
         }
 
         var payment = new Payment
@@ -62,5 +80,17 @@ public class ProcessPaymentCommandHandler : IRequestHandler<ProcessPaymentComman
             Status = payment.PaymentStatus,
             Amount = payment.Amount
         });
+    }
+
+    private static T? TryDeserialize<T>(string json)
+    {
+        try
+        {
+            return JsonSerializer.Deserialize<T>(json, JsonOptions);
+        }
+        catch
+        {
+            return default;
+        }
     }
 }

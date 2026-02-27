@@ -26,6 +26,11 @@ public interface IApplicationDbContext
     DbSet<MenuItemOptionGroup> MenuItemOptionGroups { get; }
     DbSet<MenuItemOption> MenuItemOptions { get; }
     DbSet<ApplicationUser> Users { get; }
+    DbSet<UserRole> UserRoles { get; }
+    DbSet<RefreshToken> RefreshTokens { get; }
+    DbSet<AuditLog> AuditLogs { get; }
+    DbSet<SystemSetting> SystemSettings { get; }
+    DbSet<RestaurantSetting> RestaurantSettings { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken);
 }
