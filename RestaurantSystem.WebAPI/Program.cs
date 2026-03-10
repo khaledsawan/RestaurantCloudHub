@@ -1,310 +1,43 @@
-using System.Security.Authentication;
-using System.Text;
-using FluentValidation;
-using MediatR;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Diagnostics;
-using Microsoft.AspNetCore.HttpOverrides;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.WebUtilities;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Diagnostics.HealthChecks;
-using Microsoft.IdentityModel.Tokens;
-using RestaurantSystem.Application.Common.Behaviors;
-using RestaurantSystem.Application.Common.Interfaces;
-using RestaurantSystem.Application.Features.Auth.Commands.Register;
-using RestaurantSystem.Infrastructure.Identity;
-using RestaurantSystem.Infrastructure.Options;
 using RestaurantSystem.Infrastructure.Persistence;
-using RestaurantSystem.Infrastructure.Persistence.Interceptors;
-using RestaurantSystem.Infrastructure.Services;
-using RestaurantSystem.WebAPI.Services;
-using RestaurantSystem.WebAPI.Conventions;
-using Microsoft.OpenApi;
+using RestaurantSystem.WebAPI.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("AllowFrontend",
-        policy =>
-        {
-            policy.WithOrigins("http://localhost:4200")
-                  .AllowAnyHeader()
-                  .AllowAnyMethod()
-                  .AllowCredentials();
-        });
-});
 
-builder.Configuration.Sources.Clear();
-builder.Configuration.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
-builder.Configuration.AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true, reloadOnChange: true);
+// Configuration sources: appsettings, user secrets (dev), env vars, and command line.
+builder.AddAppConfiguration(args);
 
-if (builder.Environment.IsDevelopment())
-{
-    builder.Configuration.AddUserSecrets<Program>(optional: true, reloadOnChange: true);
-}
+// Kestrel HTTPS settings (TLS 1.2/1.3 only).
+builder.AddKestrelSecurity();
 
-builder.Configuration.AddEnvironmentVariables();
+// Security headers and forwarding settings.
+builder.Services.AddSecurityHeaders();
+builder.Services.ConfigureForwardedHeaders(builder.Configuration);
 
-if (args is { Length: > 0 })
-{
-    builder.Configuration.AddCommandLine(args);
-}
+// Database and EF Core: ConnectionStrings:DefaultConnection, EfCore:*.
+builder.Services.AddDatabase(builder.Configuration);
 
-builder.Services.AddHttpsRedirection(options =>
-{
-    options.RedirectStatusCode = StatusCodes.Status307TemporaryRedirect;
-    options.HttpsPort = 443;
-});
+// API versioning + Swagger/OpenAPI.
+builder.Services.AddApiVersioningAndSwagger();
 
-builder.WebHost.ConfigureKestrel(serverOptions =>
-{
-    serverOptions.ConfigureHttpsDefaults(httpsOptions =>
-    {
-        httpsOptions.SslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13;
-    });
-});
+// Controllers, ProblemDetails, MediatR, validators, and app services.
+builder.Services.AddWebApiServices(builder.Environment);
 
-builder.Services.AddHsts(options =>
-{
-    options.MaxAge = TimeSpan.FromDays(365);
-    options.IncludeSubDomains = true;
-    options.Preload = true;
-});
+// JWT auth: JwtSettings:*.
+builder.Services.AddAuthServices(builder.Configuration);
 
-builder.Services.Configure<ForwardedHeadersOptions>(options =>
-{
-    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
-    options.KnownIPNetworks.Clear();
-    options.KnownProxies.Clear();
-});
-
-// DATABASE
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
-                       ?? throw new InvalidOperationException(
-                           "Required configuration 'ConnectionStrings:DefaultConnection' is missing. " +
-                           "Set it via user secrets for Development or environment variable 'ConnectionStrings__DefaultConnection'.");
-
-var enableSensitiveDataLogging = builder.Configuration.GetValue<bool?>("EfCore:EnableSensitiveDataLogging") ?? false;
-var enableDetailedErrors = builder.Configuration.GetValue<bool?>("EfCore:EnableDetailedErrors") ?? false;
-
-builder.Services.Configure<AuditOptions>(builder.Configuration.GetSection("Audit"));
-builder.Services.Configure<OrderSettings>(builder.Configuration.GetSection(OrderSettings.SectionName));
-builder.Services.AddScoped<AuditableEntityInterceptor>();
-builder.Services.AddScoped<SoftDeleteInterceptor>();
-builder.Services.AddScoped<AuditLogInterceptor>();
-
-builder.Services.AddDbContext<ApplicationDbContext>((sp, options) =>
-{
-    options.UseNpgsql(connectionString);
-    options.EnableSensitiveDataLogging(enableSensitiveDataLogging);
-    options.EnableDetailedErrors(enableDetailedErrors);
-    options.AddInterceptors(
-        sp.GetRequiredService<AuditableEntityInterceptor>(),
-        sp.GetRequiredService<SoftDeleteInterceptor>(),
-        sp.GetRequiredService<AuditLogInterceptor>());
-});
-
-// VERSIONING
-builder.Services.AddApiVersioning(options =>
-{
-    options.AssumeDefaultVersionWhenUnspecified = true;
-    options.DefaultApiVersion = new ApiVersion(1, 0);
-    options.ReportApiVersions = true;
-});
-
-builder.Services.AddVersionedApiExplorer(options =>
-{
-    options.GroupNameFormat = "'v'VVV";
-    options.SubstituteApiVersionInUrl = true;
-});
-
-// CONTROLLERS (API)
-builder.Services.AddControllers(options =>
-    {
-        options.Conventions.Add(new SuccessResponseTypeConvention());
-        options.Filters.Add(new ProducesResponseTypeAttribute(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest));
-        options.Filters.Add(new ProducesResponseTypeAttribute(typeof(ProblemDetails), StatusCodes.Status401Unauthorized));
-        options.Filters.Add(new ProducesResponseTypeAttribute(typeof(ProblemDetails), StatusCodes.Status403Forbidden));
-        options.Filters.Add(new ProducesResponseTypeAttribute(typeof(ProblemDetails), StatusCodes.Status404NotFound));
-        options.Filters.Add(new ProducesResponseTypeAttribute(typeof(ProblemDetails), StatusCodes.Status500InternalServerError));
-    })
-    .AddJsonOptions(options =>
-    {
-        options.JsonSerializerOptions.Converters.Add(
-            new System.Text.Json.Serialization.JsonStringEnumConverter(System.Text.Json.JsonNamingPolicy.CamelCase));
-    });
-
-builder.Services.AddProblemDetails(options =>
-{
-    options.CustomizeProblemDetails = context =>
-    {
-        context.ProblemDetails.Extensions["traceId"] = context.HttpContext.TraceIdentifier;
-    };
-});
-
-// HTTP CONTEXT ACCESSOR (for CurrentUserService)
-builder.Services.AddHttpContextAccessor();
-
-// MEDIATR + VALIDATION
-builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssemblyContaining<RegisterCommand>());
-builder.Services.AddValidatorsFromAssemblyContaining<RegisterCommandValidator>();
-builder.Services.AddTransient(typeof(IPipelineBehavior<,>), typeof(UnhandledExceptionBehavior<,>));
-builder.Services.AddTransient(typeof(IPipelineBehavior<,>), typeof(PerformanceBehavior<,>));
-builder.Services.AddTransient(typeof(IPipelineBehavior<,>), typeof(LoggingBehavior<,>));
-builder.Services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
-
-// AUTH SERVICES
-builder.Services.AddScoped<IIdentityService, IdentityService>();
-builder.Services.AddScoped<ITokenService, TokenService>();
-builder.Services.AddScoped<IEmailService, EmailService>();
-builder.Services.AddScoped<IDateTime, DateTimeService>();
-builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
-builder.Services.AddScoped<IOrderSettings, OrderSettingsService>();
-builder.Services.AddScoped<IApplicationDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
-builder.Services.AddScoped<ApplicationDbContextInitializer>();
-builder.Services.AddSingleton<IBackgroundTaskQueue, BackgroundTaskQueue>();
-builder.Services.AddHostedService<QueuedHostedService>();
-builder.Services.AddScoped<IFileStorage, LocalFileStorage>();
-builder.Services.AddMemoryCache();
-builder.Services.AddScoped<ICacheService, MemoryCacheService>();
-
-// JWT AUTH
-var jwtSecret = builder.Configuration["JwtSettings:SecretKey"]
-    ?? throw new InvalidOperationException("JwtSettings:SecretKey is required");
-var jwtIssuer = builder.Configuration["JwtSettings:Issuer"] ?? "RestaurantSystem";
-var jwtAudience = builder.Configuration["JwtSettings:Audience"] ?? "RestaurantSystemAPI";
-
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddJwtBearer(options =>
-    {
-        options.TokenValidationParameters = new TokenValidationParameters
-        {
-            ValidateIssuerSigningKey = true,
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecret)),
-            ValidateIssuer = true,
-            ValidIssuer = jwtIssuer,
-            ValidateAudience = true,
-            ValidAudience = jwtAudience,
-            ValidateLifetime = true,
-            ClockSkew = TimeSpan.Zero
-        };
-    });
-
-// SWAGGER / OPENAPI
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen(options =>
-{
-    options.SwaggerDoc("v1", new OpenApiInfo { Title = "Restaurant API v1", Version = "v1" });
-    options.SwaggerDoc("v2", new OpenApiInfo { Title = "Restaurant API v2", Version = "v2" });
-    options.SwaggerDoc("health", new OpenApiInfo { Title = "Health Checks", Version = "v1" });
-
-    options.DocInclusionPredicate((docName, apiDesc) =>
-    {
-        if (docName == "health")
-        {
-            return apiDesc.GroupName == "health";
-        }
-        return apiDesc.GroupName == docName;
-    });
-
-    const string securitySchemeName = "Bearer";
-
-    options.AddSecurityDefinition(securitySchemeName, new OpenApiSecurityScheme
-    {
-        Name = "Authorization",
-        In = ParameterLocation.Header,
-        Type = SecuritySchemeType.Http,
-        Scheme = "bearer",
-        BearerFormat = "JWT",
-        Description = "JWT Authorization header using the Bearer scheme."
-    });
-
-    // This is the new API for Swashbuckle 10 — use a delegate and the built-in reference type
-    options.AddSecurityRequirement(document => new OpenApiSecurityRequirement
-    {
-        [new OpenApiSecuritySchemeReference(securitySchemeName, document)] = new List<string>()
-    });
-
-});
-
-// HEALTHCHECKS
-builder.Services.AddHealthChecks()
-    .AddCheck("self", () => HealthCheckResult.Healthy(), tags: ["live"])
-    .AddNpgSql(connectionString, name: "postgresql", tags: ["ready"]);
+// Health checks + CORS (uses DefaultConnection for DB check).
+builder.Services.AddHealthChecksAndCors(builder.Configuration);
 
 var app = builder.Build();
 
-// SEED DATA
-using (var scope = app.Services.CreateScope())
+// SEED DATA (Development only)
+if (app.Environment.IsDevelopment())
 {
+    using var scope = app.Services.CreateScope();
     var initializer = scope.ServiceProvider.GetRequiredService<ApplicationDbContextInitializer>();
     await initializer.SeedAsync();
 }
 
-// Swagger UI
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI(c =>
-    {
-        c.SwaggerEndpoint("/swagger/v1/swagger.json", "API v1");
-        c.SwaggerEndpoint("/swagger/v2/swagger.json", "API v2");
-        c.SwaggerEndpoint("/swagger/health/swagger.json", "Health Checks");
-    });
-}
-
-if (!app.Environment.IsDevelopment())
-{
-    app.UseExceptionHandler(errorApp =>
-    {
-        errorApp.Run(async context =>
-        {
-            var problemDetailsService = context.RequestServices.GetRequiredService<IProblemDetailsService>();
-            var exceptionHandlerFeature = context.Features.Get<IExceptionHandlerFeature>();
-            if (exceptionHandlerFeature?.Error != null)
-            {
-                context.Response.StatusCode = StatusCodes.Status500InternalServerError;
-                await problemDetailsService.WriteAsync(new ProblemDetailsContext
-                {
-                    HttpContext = context,
-                    ProblemDetails = new ProblemDetails
-                    {
-                        Status = StatusCodes.Status500InternalServerError,
-                        Title = "An unexpected error occurred."
-                    }
-                });
-            }
-        });
-    });
-    app.UseHsts();
-}
-
-app.UseForwardedHeaders();
-app.UseStaticFiles();
-app.UseHttpsRedirection();
-app.UseCors("AllowFrontend");
-app.UseAuthentication();
-app.UseAuthorization();
-app.UseStatusCodePages(async context =>
-{
-    var httpContext = context.HttpContext;
-    if (httpContext.Response.HasStarted)
-    {
-        return;
-    }
-
-    var problemDetailsService = httpContext.RequestServices.GetRequiredService<IProblemDetailsService>();
-    await problemDetailsService.WriteAsync(new ProblemDetailsContext
-    {
-        HttpContext = httpContext,
-        ProblemDetails = new ProblemDetails
-        {
-            Status = httpContext.Response.StatusCode,
-            Title = ReasonPhrases.GetReasonPhrase(httpContext.Response.StatusCode)
-        }
-    });
-});
-app.MapControllers();
+app.UseWebApiPipeline();
 
 app.Run();

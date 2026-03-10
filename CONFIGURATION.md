@@ -68,9 +68,11 @@ Notes:
 With `dotnet run`:
 
 ```bash
-ASPNETCORE_ENVIRONMENT=Development dotnet run --project RestaurantSystem.API
-ASPNETCORE_ENVIRONMENT=Staging dotnet run --project RestaurantSystem.API
-ASPNETCORE_ENVIRONMENT=Production dotnet run --project RestaurantSystem.API
+dotnet run --project RestaurantSystem.WebAPI --launch-profile https-staging
+
+$env:ASPNETCORE_ENVIRONMENT="Staging"
+dotnet run --project RestaurantSystem.WebAPI
+
 ```
 
 `launchSettings.json` now includes dedicated profiles for all three environments.
