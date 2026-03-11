@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.WebUtilities;
+using Infrastructure.RateLimiting;
 using RestaurantSystem.Application.Common.Exceptions;
 
 namespace RestaurantSystem.WebAPI.Extensions;
@@ -76,6 +77,7 @@ public static class WebApplicationExtensions
         app.UseCors("AllowFrontend");
         app.UseAuthentication();
         app.UseAuthorization();
+        app.UseApiRateLimiting();
         app.UseStatusCodePages(async context =>
         {
             var httpContext = context.HttpContext;

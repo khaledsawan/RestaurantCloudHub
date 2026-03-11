@@ -19,6 +19,8 @@ using RestaurantSystem.Application.Features.Auth.Queries.ValidateToken;
 using RestaurantSystem.WebAPI.Helpers;
 using RestaurantSystem.WebAPI.Models.Responses;
 using RestaurantSystem.Application.Common.Models;
+using Microsoft.AspNetCore.RateLimiting;
+using Infrastructure.RateLimiting;
 
 namespace RestaurantSystem.WebAPI.Controllers;
 
@@ -37,6 +39,7 @@ public class AuthController : ControllerBase
     /// Register a new user
     /// </summary>
     [HttpPost("register")]
+    [EnableRateLimiting(RateLimiterPolicies.Register)]
     [AllowAnonymous]
     public async Task<ActionResult<RegisterResponseDto>> Register([FromBody] RegisterCommand command)
     {
@@ -54,6 +57,7 @@ public class AuthController : ControllerBase
     /// Login and get tokens
     /// </summary>
     [HttpPost("login")]
+    [EnableRateLimiting(RateLimiterPolicies.Login)]
     [AllowAnonymous]
     public async Task<ActionResult<AuthResult>> Login([FromBody] LoginCommand command)
     {
@@ -105,6 +109,7 @@ public class AuthController : ControllerBase
     /// Resend confirmation email
     /// </summary>
     [HttpPost("resend-confirmation")]
+    [EnableRateLimiting(RateLimiterPolicies.SendOtp)]
     [AllowAnonymous]
     public async Task<ActionResult<MessageResponseDto>> ResendConfirmation([FromBody] ResendConfirmationCommand command)
     {

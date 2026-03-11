@@ -1,5 +1,6 @@
 using RestaurantSystem.Infrastructure.Persistence;
 using RestaurantSystem.WebAPI.Extensions;
+using RestaurantSystem.Infrastructure.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -27,6 +28,9 @@ builder.Services.AddAuthServices(builder.Configuration);
 
 // Health checks + CORS (uses DefaultConnection for DB check).
 builder.Services.AddHealthChecksAndCors(builder.Configuration);
+
+// rate limiting policies and middleware
+builder.Services.AddApiRateLimiting();
 
 var app = builder.Build();
 
