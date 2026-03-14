@@ -2,16 +2,19 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using RestaurantSystem.Application.Common.Interfaces;
 using RestaurantSystem.Application.Common.Models;
+using RestaurantSystem.Application.Features.Orders.EventHandlers;
 
 namespace RestaurantSystem.Application.Features.Orders.Commands.AssignDriver;
 
 public class AssignDriverCommandHandler : IRequestHandler<AssignDriverCommand, Result>
 {
     private readonly IApplicationDbContext _context;
+    private readonly IMediator _mediator;
 
-    public AssignDriverCommandHandler(IApplicationDbContext context)
+    public AssignDriverCommandHandler(IApplicationDbContext context, IMediator mediator)
     {
         _context = context;
+        _mediator = mediator;
     }
 
     public async Task<Result> Handle(AssignDriverCommand request, CancellationToken cancellationToken)
@@ -34,6 +37,8 @@ public class AssignDriverCommandHandler : IRequestHandler<AssignDriverCommand, R
 
         order.AssignedDriverId = staff.Id;
         await _context.SaveChangesAsync(cancellationToken);
+
+        await _mediator.Publish(new DeliveryAssignedEvent(order.Id, staff.Id), cancellationToken);
 
         return Result.Success();
     }

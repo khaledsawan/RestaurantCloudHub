@@ -161,6 +161,8 @@ public static class ServiceCollectionExtensions
             };
         });
 
+        services.AddSignalR();
+
         services.AddHttpContextAccessor();
 
         services.AddMediatR(cfg => cfg.RegisterServicesFromAssemblyContaining<RegisterCommand>());
@@ -176,6 +178,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IDateTime, DateTimeService>();
         services.AddScoped<ICurrentUserService, CurrentUserService>();
         services.AddScoped<IOrderSettings, OrderSettingsService>();
+        services.AddScoped<ISignalRService, SignalRService>();
         services.AddScoped<IApplicationDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
         services.AddScoped<ApplicationDbContextInitializer>();
         services.AddSingleton<IBackgroundTaskQueue, BackgroundTaskQueue>();

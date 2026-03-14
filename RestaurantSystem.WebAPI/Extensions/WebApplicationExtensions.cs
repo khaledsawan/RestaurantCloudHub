@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.WebUtilities;
 using Infrastructure.RateLimiting;
 using RestaurantSystem.Application.Common.Exceptions;
+using RestaurantSystem.Infrastructure.Hubs;
 
 namespace RestaurantSystem.WebAPI.Extensions;
 
@@ -98,6 +99,11 @@ public static class WebApplicationExtensions
             });
         });
         app.MapControllers();
+        app.MapHub<OrderHub>("/hubs/orders").RequireAuthorization();
+        app.MapHub<KitchenHub>("/hubs/kitchen").RequireAuthorization();
+        app.MapHub<NotificationHub>("/hubs/notifications").RequireAuthorization();
+        app.MapHub<DeliveryHub>("/hubs/delivery").RequireAuthorization();
+        app.MapHub<DashboardHub>("/hubs/dashboard").RequireAuthorization();
 
         return app;
     }
