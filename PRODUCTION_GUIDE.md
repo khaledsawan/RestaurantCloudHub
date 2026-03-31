@@ -892,6 +892,10 @@ app.Run();
 - ✅ Retry policies on database failures
 - ✅ Backup strategy (daily automated backups)
 
+### Swagger & Dev Frontend Access
+- `Swagger:EnableInProduction` is off by default; flip `Swagger__EnableInProduction=true` (or the JSON flag) only when you need Swagger in a live environment so it stays hidden otherwise.
+- Populate `Cors:AllowedOrigins` with the real hosting origin(s) plus `http://localhost:4200` so local front-end development can reach the production API without additional code changes.
+
 ---
 
 ## 8. EXAMPLE API USAGE

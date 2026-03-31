@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.WebUtilities;
+using Microsoft.Extensions.Configuration;
 using Infrastructure.RateLimiting;
 using RestaurantSystem.Application.Common.Exceptions;
 using RestaurantSystem.Infrastructure.Hubs;
@@ -9,18 +10,19 @@ namespace RestaurantSystem.WebAPI.Extensions;
 
 public static class WebApplicationExtensions
 {
-    public static WebApplication UseWebApiPipeline(this WebApplication app)
-    {
-        if (app.Environment.IsDevelopment())
+        public static WebApplication UseWebApiPipeline(this WebApplication app)
         {
-            app.UseSwagger();
-            app.UseSwaggerUI(c =>
+            var enableSwaggerInProduction = app.Configuration.GetValue<bool>("Swagger:EnableInProduction");
+            if (app.Environment.IsDevelopment() || enableSwaggerInProduction)
             {
-                c.SwaggerEndpoint("/swagger/v1/swagger.json", "API v1");
-                c.SwaggerEndpoint("/swagger/v2/swagger.json", "API v2");
-                c.SwaggerEndpoint("/swagger/health/swagger.json", "Health Checks");
-            });
-        }
+                app.UseSwagger();
+                app.UseSwaggerUI(c =>
+                {
+                    c.SwaggerEndpoint("/swagger/v1/swagger.json", "API v1");
+                    c.SwaggerEndpoint("/swagger/v2/swagger.json", "API v2");
+                    c.SwaggerEndpoint("/swagger/health/swagger.json", "Health Checks");
+                });
+            }
 
         if (!app.Environment.IsDevelopment())
         {

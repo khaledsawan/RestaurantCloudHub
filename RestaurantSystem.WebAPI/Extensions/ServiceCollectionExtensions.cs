@@ -1,6 +1,7 @@
 using System.Security.Authentication;
 using System.Text;
 using System.Net;
+using System.Linq;
 using FluentValidation;
 using MediatR;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -229,17 +230,21 @@ public static class ServiceCollectionExtensions
                                    "Required configuration 'ConnectionStrings:DefaultConnection' is missing. " +
                                    "Set it via user secrets for Development or environment variable 'ConnectionStrings__DefaultConnection'.");
 
-        var allowedOrigins = configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? Array.Empty<string>();
+        var configuredOrigins = configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? Array.Empty<string>();
+        const string localFrontend = "http://localhost:4200";
+        var finalOrigins = (configuredOrigins.Length > 0
+                ? configuredOrigins
+                : Array.Empty<string>())
+            .Append(localFrontend)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+
         services.AddCors(options =>
         {
             options.AddPolicy("AllowFrontend",
                 policy =>
                 {
-                    var corsBuilder = allowedOrigins.Length > 0
-                        ? policy.WithOrigins(allowedOrigins)
-                        : policy.WithOrigins("http://localhost:4200");
-
-                    corsBuilder
+                    policy.WithOrigins(finalOrigins)
                         .AllowAnyHeader()
                         .AllowAnyMethod()
                         .AllowCredentials();

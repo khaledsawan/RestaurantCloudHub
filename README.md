@@ -42,5 +42,6 @@ Notes
 - The `RestaurantSystem.Application` project follows a feature-focused structure (Commands/Queries/DTOs). Look in `Auth` to follow the authentication flow end-to-end.
 - The `Infrastructure` project contains EF Core configurations, interceptors for auditing/soft-delete, and identity/token services.
 - Use `Program.cs` in the WebAPI project to inspect registered services and middleware (exception handling, JWT middleware, etc.).
-
+- To briefly expose Swagger in a deployed environment, set `Swagger:EnableInProduction` (or `Swagger__EnableInProduction=true`) so OpenAPI/UI are registered outside of development.
+- Keep `Cors:AllowedOrigins` up to date with your live domain(s) plus `http://localhost:4200` so local front-end builds can still call the API without altering code.
 
