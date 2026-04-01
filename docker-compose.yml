@@ -1,64 +1,26 @@
 services:
-  db:
-    image: postgres:16
-    container_name: restaurantcloudhub-db
-    restart: unless-stopped
-    environment:
-      POSTGRES_DB: restaurantcloudhub
-      POSTGRES_USER: restaurantcloudhub
-      POSTGRES_PASSWORD: change_me_db_password
-    volumes:
-      - db_data:/var/lib/postgresql/data
-    networks:
-      - app_net
-
   api:
+    volumes:
+    - /www/wwwroot/restaurantcloudhub_uploads:/app/wwwroot
     build:
       context: .
       dockerfile: RestaurantSystem.WebAPI/Dockerfile
     container_name: restaurantcloudhub-api
     restart: unless-stopped
+    network_mode: "host"
     environment:
       ASPNETCORE_ENVIRONMENT: Production
       ASPNETCORE_URLS: http://+:8080
-      ConnectionStrings__DefaultConnection: Host=db;Database=restaurantcloudhub;Username=restaurantcloudhub;Password=change_me_db_password
-      JwtSettings__SecretKey: change_me_change_me_change_me_32chars
+      ConnectionStrings__DefaultConnection: Host=127.0.0.1;Port=5432;Database=restauranthubdb;Username=RestaurantHubDb;Password=5X55X7XHkLBFbXmc
+      JwtSettings__SecretKey: "JwtSettings\u003eHv}y|P,pjoA9ko1VO;vgdhtYzH}wq,He#Ld/2\u0026E\u0026]gW\u003c6hCW*eXB6s8SO\u0026W@5.-%,X8PN5i(pAPU4]7)@x1ol"
       JwtSettings__Issuer: RestaurantSystem
       JwtSettings__Audience: RestaurantSystemAPI
       Cors__AllowedOrigins__0: https://restaurantcloudhub.sawanhoney.com
-      ForwardedHeaders__KnownIPNetworks__0: 172.16.0.0/12
+      ForwardedHeaders__KnownIPNetworks__0: 127.0.0.1
       EmailSettings__SmtpHost: smtp.gmail.com
       EmailSettings__SmtpPort: 587
-      EmailSettings__SmtpUser: change_me
-      EmailSettings__SmtpPass: change_me
+      EmailSettings__SmtpUser: khaled963sawan@gmail.com
+      EmailSettings__SmtpPass: wpsd rszb oadt blis
       EmailSettings__FromName: Restaurant System
-      EmailSettings__FromEmail: change_me
-    depends_on:
-      - db
-    networks:
-      - app_net
+      EmailSettings__FromEmail: khaled963sawan@gmail.com
 
-  caddy:
-    image: caddy:2
-    container_name: restaurantcloudhub-caddy
-    restart: unless-stopped
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile:ro
-      - caddy_data:/data
-      - caddy_config:/config
-    depends_on:
-      - api
-    networks:
-      - app_net
-
-volumes:
-  db_data:
-  caddy_data:
-  caddy_config:
-
-networks:
-  app_net:
-    driver: bridge
